@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import scipy.io as sio
 import numpy as np
 import scipy.stats as sst
-from parse import *
 
 
 
@@ -25,6 +24,8 @@ def entropy_total():
     data_ra[data_ra == 1] = True
     data_ra[data_ra == 0] = False
     pparr = []
+
+    print("HASHMAP TEST: HASHMAP:", hash_map_counter(data_ra))
 
     print("Shape after the 0s columns have been removed", data_ra.shape)
 
@@ -48,8 +49,8 @@ def entropy_total():
 
         # STORE THE NUMBER OF TIMES VECTOR 'i' HAS BEEN REPEATED
         pparr.append(pp)
-        print(i, pp)
-        print(data_ra.shape)
+        #print(i, pp)
+        #print(data_ra.shape)
         # THE SIZE OF THE DATASET WILL CHANGE SINCE WE ARE DELETING ALL COLUMNS THAT ARE SIMILAR
         # THEREFORE, WE HAVE TO STOP IF THE INDEX NUMBER EXCEEDS OR IS EQUAL TO THE SIZE OF THE ARRAY
         # SINCE ALL THE ONES BEHIND THE INDEX ARE NECESSARILY UNIQUE, BECAUSE THE ONES IN FRONT
@@ -59,6 +60,7 @@ def entropy_total():
             break
 
     sio.savemat('counts.mat', {'counts': pparr}, do_compression=True)
+    print("HASHMAP TEST: CONTROL:", pparr)
     # plt.hist(pparr)
     # plt.show()
 
@@ -143,6 +145,7 @@ def entropy_recon():
     # plt.show()
 
 
+
 def calc_entropy():
     a = np.ndarray.flatten(sio.loadmat('counts.mat')['counts'])
     print(a.shape)
@@ -163,7 +166,66 @@ def calc_entropy():
     print(ent2)
 
 
+def hash_map_counter(data_matrix):
+    """
+    This method takes in a data matrix and returns 'pparr'
+    The hashmap holds the column indices of columns that get mapped to a particular place
+    """
+
+    #
+    hash_map = []
+    for i in range(8192):
+        hash_map.append([])
+
+    # ppColumns is a dictionary from columns ppCounts index, keeping runtime nice and linear
+    ppColumns = {}
+    ppCounts = []
+
+    for col in range(data_matrix.shape[1] - 1):
+        hash = hash_function(data_matrix, col)
+        is_duplicate = False
+
+        # loop over all columns already in that hash of the hashmap
+        for prior_column in hash_map[hash]:
+
+            # Checks if the two vectors are exactly equal [not just having the same hash]
+            if not np.any(np.logical_xor(data_matrix[:, col], data_matrix[:, prior_column])):
+                is_duplicate = True
+                ppCounts[ppColumns[prior_column]] += 1
+
+        if not is_duplicate:
+            hash_map[hash].append(col)
+            ppCounts.append(1)
+            ppColumns[col] = len(ppCounts) - 1
+
+    return ppCounts
+
+
+
+
+
+
+
+    # this checks for if two cols are the same
+    # if (not np.any(np.logical_xor(data_ra[:, i], data_ra[:, k])))
+
+
+
+def hash_function(data_matrix, col):
+    """
+    This computes a hash index for the hash_map, 0 <= hash <= 8191 (2^13 - 1)
+    from the given column of the data matrix
+
+    Does this by adding each subsequent by an increasing power of two, maxing out at 13
+    and returning to 0. The row is also added to prevent things from being too cyclic
+    """
+    total = 0
+    for row in range (data_matrix.shape[0] - 1):
+        total += data_matrix[0, row, col] * (2 ** (row % 14)) + row
+    return total % (2 ** 13)
+
+
 if __name__ == "__main__":
     entropy_total()
-    entropy_recon()
-    calc_entropy()
+    #entropy_recon()
+    #calc_entropy()
