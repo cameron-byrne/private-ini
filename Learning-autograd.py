@@ -164,50 +164,17 @@ def loss_function(data, dict, representation):
     reconstruction_term = np.linalg.norm(data - (dict @ representation))
     return reconstruction_term + lasso_term
 
+def loss_function_no_lasso(data, dict, representation):
+    '''
+    This is used for a gradient calculation, but does not include the lasso loss term
+    Instead, that is calculated separately for efficiency
+    '''
 
-def dict_learning_larger_matrix():
-    # goal: encode this shit into a two-dimensional-feature matrix using a custom dictionary learning algo
-    # dimension = 5x4, same as how the code following would imply
-    data = np.array([[1, 3, 4, 1, 6, 3],
-                     [1, 3, 4, 1, 6, 3],
-                     [2, 1, 2, 3, 3, 2],
-                     [2, 1, 2, 3, 3, 2]])
-
-    # dictionary initialized to randoms
-    dict = np.random.rand(4, 2)
-
-    # representations also initialized to randoms
-    representation = np.random.rand(2, 6)
-
-    # this is a function that gets gradient of dict given parameters for loss_function
-    calc_dict_gradient = grad(loss_function_half_norm, 1)
-    calc_representation_gradient = grad(loss_function_half_norm, 2)
-
-    alpha = .002  # step size for grad descent, .001 seems to work well
-
-    # This time, just alternate between the two things being optimized, maybe converge->converge->converge... later
-    optimizing_dict_now = False
-    for i in range(20000):
-
-        # if i % 5 == 0:
-        optimizing_dict_now = not optimizing_dict_now
-
-        if optimizing_dict_now:
-            dict_grad = calc_dict_gradient(data, dict, representation, .5)
-            dict -= alpha * dict_grad
-        else:
-            repr_grad = calc_representation_gradient(data, dict, representation, .5)
-            representation -= alpha * repr_grad
-        if i % 1000 == 0:
-            print("\nreconstructed matrix =", dict @ representation)
-            print("\ndict grad = ", dict_grad)
+    reconstruction_term = np.linalg.norm(data - (dict @ representation))
+    return reconstruction_term
 
 
-    print("\ndict =", dict)
-    print("\nrepresentation =", representation)
-    print("\nreconstructed matrix =", dict @ representation)
-
-def dict_learning_smaller_matrix():
+def toy_test_dict_learning():
     # goal: encode this shit into a two-dimensional-feature matrix using a custom dictionary learning algo
     # dimension = 5x4, same as how the code following would imply
     data = np.array([[1, 1, 2, 2],
@@ -249,6 +216,10 @@ def dict_learning_smaller_matrix():
     print("\nreconstructed matrix =", dict @ representation)
 
 def dict_learning_custom_matrix(data, target_dimension):
+    '''
+    This is the method that can run dictionary learning on the ini dataset. Currently, some optimization has been done,
+    but the gradient descent itself needs to be modified to change the step size over time for better convergence.
+    '''
     numrows = data.shape[0]
     numcols = data.shape[1]
 
@@ -258,20 +229,43 @@ def dict_learning_custom_matrix(data, target_dimension):
     representation = np.random.rand(target_dimension, numcols)
 
     # this is a function that gets gradient of dict given parameters for loss_function
-    calc_dict_gradient = grad(loss_function, 1)
-    calc_representation_gradient = grad(loss_function, 2)
+    calc_dict_gradient = grad(loss_function_no_lasso, 1)
+    calc_representation_gradient = grad(loss_function_no_lasso, 2)
 
-    alpha = .002  # step size for grad descent, .001 seems to work well
+    alpha = .021  # step size for grad descent, .001 seems to work well
 
     # This time, just alternate between the two things being optimized, maybe converge->converge->converge... later
     optimizing_dict_now = False
-    for i in range(1000):
-        print(i)
-        if i % 5 == 0:
+    for i in range(5000):
+        if i % 20 == 0:
+            print("iteration", i)
+            #print("reconstructed =", (dict @ representation)[1, 1034])
+            #print("actual =", data[1, 1034])
+            #print_confusion_matrix(data, dict @ representation)
+            print(loss_function_no_lasso(data, dict, representation), "\n")
+        if i % 1 == 0:
             optimizing_dict_now = not optimizing_dict_now
+        if i == 200:
+            alpha /= 2
+        if i == 400:
+            alpha /= 2
+        if i == 600:
+            alpha /= 2
+        if i == 2000:
+            alpha /= 2
+        if i == 3500:
+            alpha /= 2
 
         if optimizing_dict_now:
+            lamb = 0   # lasso penalty hyperparameter
+
             dict_grad = calc_dict_gradient(data, dict, representation)
+
+            # calculate the lasso loss gradient manually for efficiency [because it's easy]
+            for row in range(dict.shape[0]):
+                for col in range(dict.shape[1]):
+                    dict_grad[row, col] += lamb * dict[row, col]
+
             dict -= alpha * dict_grad
         else:
             repr_grad = calc_representation_gradient(data, dict, representation)
@@ -280,8 +274,8 @@ def dict_learning_custom_matrix(data, target_dimension):
             #print("\nreconstructed matrix =", dict @ representation)
 
     reconstructed_matrix = dict @ representation
-    reconstructed_matrix[reconstructed_matrix >= 0.38] = 1
-    reconstructed_matrix[reconstructed_matrix < 0.38] = 0
+    reconstructed_matrix[reconstructed_matrix >= 0.18] = 1
+    reconstructed_matrix[reconstructed_matrix < 0.18] = 0
 
     print_confusion_matrix(data, reconstructed_matrix)
 
@@ -291,13 +285,16 @@ def turn_scipy_matrix_to_numpy_matrix(matrix):
 
 
 def main():
+
+    # we merge the linear and sin datasets here (1 second of each)
     data_ra1 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('dataset1.mat', struct_as_record=True)['data_pc'].squeeze())
     data_ra2 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('sin_dataset1.mat', struct_as_record=True)['data_pc'].squeeze())
     total_ra = np.hstack((data_ra1, data_ra2))
     print(data_ra1.shape)
     print(data_ra2.shape)
     print(total_ra.shape)
-    dict_learning_custom_matrix(total_ra, 50)
+    dict_learning_custom_matrix(total_ra, 196)
+
 
 if __name__ == "__main__":
     main()
