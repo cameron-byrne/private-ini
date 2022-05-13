@@ -26,13 +26,13 @@ def main():
 
 def add_nums():
     sum = 0
-    for k in range(10000000):  # ten million
+    for k in range(100000000):  # ten million
         sum += k
     return sum
 
 def add_nums_multi(q):
     sum = 0
-    for k in range(10000000):  # ten million
+    for k in range(100000000):  # ten million
         sum += k
     q.put(sum)
 
