@@ -29,7 +29,7 @@ def main():
     for k in range(num_cores):
         processes[k].join()
 
-    print(q.qsize())
+    print("")
     print(f"{num_cores} core processing")
     timer.stop()
 
