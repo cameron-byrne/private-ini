@@ -14,16 +14,22 @@ def main():
     add_nums()
     timer.stop()
 
+    timer.start()
+    print("numba vanilla: ")
+    add_nums_fast()
+    timer.stop()
+
 
     timer.start()
 
+    '''
     # complete a task of adding a ton of numbers together
     for i in range(num_cores):
         add_nums()
     print("single-core processing")
     timer.stop()
 
-    '''
+
     timer.start()
     q = mp.Queue()
     processes = []
