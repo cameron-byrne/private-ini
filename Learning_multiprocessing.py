@@ -1,14 +1,16 @@
 import multiprocessing as mp
 import time
 import psutil
+import numba
 
 def main():
     # change this to change the number of cores being used
-    num_cores = 2
+    num_cores = 60
 
     timer = Timer()
 
     timer.start()
+    print("vanilla: ")
     add_nums()
     timer.stop()
 
@@ -21,10 +23,11 @@ def main():
     print("single-core processing")
     timer.stop()
 
+    '''
     timer.start()
     q = mp.Queue()
     processes = []
-
+    
     # complete the same task but split across several processes
     for core in range(num_cores):
         p = mp.Process(target=add_nums_multi, args=(q,))
@@ -38,18 +41,49 @@ def main():
     print("")
     print(f"{num_cores} core processing")
     timer.stop()
+    '''
 
     timer.start()
     with mp.Pool(num_cores) as p:
         p.map(add_nums, range(num_cores))
+    print("")
     print(f"{num_cores} core processing using pooling instead")
+    timer.stop()
+
+    timer.start()
+    with mp.Pool(num_cores) as p:
+        p.map(add_nums_fast, range(num_cores))
+    print("")
+    print(f"{num_cores} core processing using numba and pooling")
+    timer.stop()
+
+    timer.start()
+    a = add_nums_parallel()
+    print("")
+    print(f"{num_cores} core processing using numba's parallelization")
     timer.stop()
 
 
 def add_nums(dummy=0):
     sum = 0
-    for k in range(20000000):  # ten million
+    for k in range(10000000):  # ten million
         sum += k
+    return sum
+
+
+@numba.njit()
+def add_nums_fast(dummy=0):
+    sum = 0
+    for k in range(10000000):  # ten million
+        sum += k
+    return sum
+
+@numba.njit(parallel=True)
+def add_nums_parallel(dummy=0):
+    sum = 0
+    for i in numba.prange(7):
+        for k in range(10000000):  # ten million
+          sum += k
     return sum
 
 def add_nums_multi(q):
