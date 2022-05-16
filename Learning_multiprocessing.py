@@ -63,11 +63,6 @@ def main():
     print(f"{num_cores} core processing using numba and pooling")
     timer.stop()
 
-    timer.start()
-    a = add_nums_parallel(num_cores)
-    print("")
-    print(f"{num_cores} core processing using numba's parallelization")
-    timer.stop()
 
 
 def add_nums(dummy=0):
