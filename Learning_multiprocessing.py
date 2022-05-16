@@ -67,7 +67,7 @@ def main():
 
 def add_nums(dummy=0):
     sum = 0
-    for k in range(10000000):  # ten million
+    for k in range(100000000):  # ten million
         sum += k
     return sum
 
@@ -75,7 +75,7 @@ def add_nums(dummy=0):
 @numba.njit()
 def add_nums_fast(dummy=0):
     sum = 0
-    for k in range(10000000):  # ten million
+    for k in range(100000000):  # ten million
         sum += k
     return sum
 
@@ -84,7 +84,7 @@ def add_nums_parallel(num_cores):
     all_sums = []
     for i in numba.prange(num_cores):
         sum = 0
-        for k in range(10000000):  # ten million
+        for k in range(100000000):  # ten million
             sum += k
         all_sums.append(sum)
     return all_sums
