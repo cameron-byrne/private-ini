@@ -4,9 +4,15 @@ import psutil
 
 def main():
     # change this to change the number of cores being used
-    num_cores = 60
+    num_cores = 2
 
     timer = Timer()
+
+    timer.start()
+    add_nums()
+    timer.stop()
+
+
     timer.start()
 
     # complete a task of adding a ton of numbers together
@@ -33,16 +39,22 @@ def main():
     print(f"{num_cores} core processing")
     timer.stop()
 
+    timer.start()
+    with mp.Pool(num_cores) as p:
+        p.map(add_nums, range(num_cores))
+    print(f"{num_cores} core processing using pooling instead")
+    timer.stop()
 
-def add_nums():
+
+def add_nums(dummy=0):
     sum = 0
-    for k in range(10000000):  # ten million
+    for k in range(20000000):  # ten million
         sum += k
     return sum
 
 def add_nums_multi(q):
     sum = 0
-    for k in range(10000000):  # ten million
+    for k in range(20000000):  # ten million
         sum += k
     q.put(sum)
 

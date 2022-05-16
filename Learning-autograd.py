@@ -1,6 +1,7 @@
 import autograd.numpy as np
 from autograd import grad
 import scipy.io as sio
+from Learning_multiprocessing import Timer
 
 def print_confusion_matrix(act, pred):
     '''
@@ -226,7 +227,7 @@ def dict_learning_custom_matrix(data, target_dimension):
     This is the method that can run dictionary learning on the ini dataset. Currently, some optimization has been done,
     but the gradient descent itself needs to be modified to change the step size over time for better convergence.
     '''
-
+    timer = Timer()
     alpha = .020  # step size for grad descent, .001 seems to work well
     steps_between_probings = 500
     probe_multiplier = 2
@@ -251,7 +252,7 @@ def dict_learning_custom_matrix(data, target_dimension):
 
     # alpha  (alpha * 2) ( alpha / 2)
     #
-
+    timer.start()
     # we're going to use a gradient descent with a changing step size
     # first, it probes a few steps of current alpha, then a larger alpha, then a smaller alpha. (think 5-10 steps)
     # then, alpha becomes whichever of those options works best for several iterations (think 100 or so)
@@ -260,7 +261,8 @@ def dict_learning_custom_matrix(data, target_dimension):
         if i % 20 == 0:
             optimizing_dict_now = not optimizing_dict_now
         if i % steps_between_probings == 0:
-
+            timer.stop()
+            timer.start()
             # we'll use these variables for probing
             initial_dict, initial_representation = dict, representation
             initial_optimizing_dict_now = optimizing_dict_now
