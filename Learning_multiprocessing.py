@@ -20,9 +20,9 @@ def main():
     timer.stop()
 
 
+    '''
     timer.start()
 
-    '''
     # complete a task of adding a ton of numbers together
     for i in range(num_cores):
         add_nums()
