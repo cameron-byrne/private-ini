@@ -58,7 +58,7 @@ def main():
     timer.stop()
 
     timer.start()
-    a = add_nums_parallel()
+    a = add_nums_parallel(num_cores)
     print("")
     print(f"{num_cores} core processing using numba's parallelization")
     timer.stop()
@@ -79,12 +79,14 @@ def add_nums_fast(dummy=0):
     return sum
 
 @numba.njit(parallel=True)
-def add_nums_parallel(dummy=0):
-    sum = 0
-    for i in numba.prange(7):
+def add_nums_parallel(num_cores):
+    all_sums = []
+    for i in numba.prange(num_cores):
+        sum = 0
         for k in range(10000000):  # ten million
-          sum += k
-    return sum
+            sum += k
+        all_sums.append(sum)
+    return all_sums
 
 def add_nums_multi(q):
     sum = 0
