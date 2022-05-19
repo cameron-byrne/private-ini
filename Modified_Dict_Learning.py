@@ -32,11 +32,12 @@ def dict_learning_custom_matrix(data, target_dimension):
     representation = np.random.rand(target_dimension, numcols)
 
     m, n, c = 1000, 1500, 1200
-    A = np.random.rand(m, n)
-    B = np.random.rand(n, c)
-
+    A = 50 * np.random.rand(m, n)
+    B = 50 * np.random.rand(n, c)
+    print("A's shape is ", A.shape)
+    print(A)
     a = []
-    
+
     print("numpys matrix multiplication:")
     for i in range(10):
         timer.start()
