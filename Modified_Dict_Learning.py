@@ -32,10 +32,11 @@ def dict_learning_custom_matrix(data, target_dimension):
     representation = np.random.rand(target_dimension, numcols)
 
     m, n, c = 1000, 1500, 1200
-    A = np.random.randint(1, 50, size=(m, n))
-    B = np.random.randint(1, 50, size=(n, c))
+    A = np.random.rand(m, n)
+    B = np.random.rand(n, c)
 
     a = []
+    '''
     print("numpys matrix multiplication:")
     for i in range(10):
         timer.start()
@@ -47,10 +48,11 @@ def dict_learning_custom_matrix(data, target_dimension):
         timer.start()
         a.append(mat_mult(A, B))
         timer.stop()
-
+    '''
     for i in range(10):
         timer.start()
         a.append(mat_mul2(A,B))
+        timer.stop()
 
 def get_data_matrices():
     data_ra1 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
