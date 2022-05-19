@@ -36,7 +36,7 @@ def dict_learning_custom_matrix(data, target_dimension):
     B = np.random.rand(n, c)
 
     a = []
-    '''
+    
     print("numpys matrix multiplication:")
     for i in range(10):
         timer.start()
@@ -48,7 +48,7 @@ def dict_learning_custom_matrix(data, target_dimension):
         timer.start()
         a.append(mat_mult(A, B))
         timer.stop()
-    '''
+
     for i in range(10):
         timer.start()
         a.append(mat_mul2(A,B))
