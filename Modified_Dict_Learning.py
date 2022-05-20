@@ -45,6 +45,11 @@ def dict_learning_custom_matrix(data, target_dimension):
     a = mat_mult(A, B)
     timer.stop()
 
+    print("numba's matrix multiplication:")
+    timer.start()
+    a = mat_mult(A, B)
+    timer.stop()
+
 def get_data_matrices():
     data_ra1 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
     data_ra2 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('sin_dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
