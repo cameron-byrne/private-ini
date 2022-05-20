@@ -35,20 +35,18 @@ def dict_learning_custom_matrix(data, target_dimension):
     A = np.random.randint(1, 50, size=(m, n))
     B = np.random.randint(1, 50, size=(n, c))
 
+    a = []
     print("numpys matrix multiplication:")
-    timer.start()
-    a = A @ B
-    timer.stop()
+    for i in range(10):
+        timer.start()
+        a.append(A @ B)
+        timer.stop()
 
     print("numba's matrix multiplication:")
-    timer.start()
-    a = mat_mult(A, B)
-    timer.stop()
-
-    print("numba's matrix multiplication:")
-    timer.start()
-    a = mat_mult(A, B)
-    timer.stop()
+    for i in range(10):
+        timer.start()
+        a.append(mat_mult(A, B))
+        timer.stop()
 
 def get_data_matrices():
     data_ra1 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
