@@ -52,7 +52,7 @@ def dict_learning_custom_matrix(data, target_dimension):
             print("iteration:", iteration, "\nloss =", loss_function_no_lasso(data, dict, representation))
             if loss_function_no_lasso(data, dict, representation) < .5:
                 break
-'''
+            '''
             # probing step, try a few gradient descent steps with different alpha sizes
             dict_big_alpha = dict + np.zeros(dict.shape)
             dict_small_alpha = dict + np.zeros(dict.shape)
