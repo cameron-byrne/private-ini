@@ -21,7 +21,7 @@ def dict_learning_custom_matrix(data, target_dimension):
     alpha = .020  # step size for grad descent, .001 seems to work well
     steps_between_probings = 100
     probe_multiplier = 2
-    lamb = 0
+    lamb = 1
 
     numrows = data.shape[0]
     numcols = data.shape[1]
@@ -33,34 +33,41 @@ def dict_learning_custom_matrix(data, target_dimension):
     print(representation.shape)
 
     # This tells us how often to recompute the representation matrix (using least squares)
-    dictionary_gradient_steps = 50
+    dictionary_gradient_steps = 5
 
-    for iteration in range(1, 10000):
+    for iteration in range(1, 500):
         if iteration % dictionary_gradient_steps == 0:
             representation = np.linalg.lstsq(dict, data)[0]
-            print("iteration:", iteration, "\n", loss_function_no_lasso(data, dict, representation))
-        dict_gradient = compute_dictionary_gradient(dict, representation, data, lamb=0)
+        dict_gradient = compute_dictionary_gradient(dict, representation, data, lamb=lamb)
+
         dict -= alpha * dict_gradient
 
-        # probing step, try a few gradient descent steps with different alpha sizes
-        dict_big_alpha = dict
-        dict_small_alpha = dict
-        dict_same_alpha = dict
 
-        if iteration % steps_between_probings == 0:
+
+        if iteration % steps_between_probings == 1:
+            # probing step, try a few gradient descent steps with different alpha sizes
+            dict_big_alpha = dict
+            dict_small_alpha = dict
+            dict_same_alpha = dict
+
+            print("iteration:", iteration, "\nloss =", loss_function_no_lasso(data, dict, representation))
             for i in range(10):
                 dict_same_alpha -= alpha * compute_dictionary_gradient(dict_same_alpha, representation, data)
-                dict_small_alpha -= (alpha / probe_multiplier) * compute_dictionary_gradient(dict_same_alpha, representation, data)
-                dict_big_alpha -= (alpha * probe_multiplier) * compute_dictionary_gradient(dict_same_alpha, representation, data)
+                dict_small_alpha -= (alpha / probe_multiplier) * compute_dictionary_gradient(dict_small_alpha, representation, data)
+                dict_big_alpha -= (alpha * probe_multiplier) * compute_dictionary_gradient(dict_big_alpha, representation, data)
             loss_big = loss_function_no_lasso(data, dict_big_alpha, representation)
             loss_small = loss_function_no_lasso(data, dict_small_alpha, representation)
             loss_same = loss_function_no_lasso(data, dict_same_alpha, representation)
 
             # update alpha based on result of probes
             if loss_big < loss_same and loss_big < loss_small:
-                alpha *= 2
+                alpha *= probe_multiplier
+                print(f"Probe complete. Alpha grows to {round(alpha, 5)}")
             elif loss_small < loss_same and loss_small < loss_big:
-                alpha /= 2
+                alpha /= probe_multiplier
+                print(f"Probe complete. Alpha shrinks to {round(alpha, 5)}")
+            else:
+                print(f"Probe complete. Alpha stays at {round(alpha, 5)}")
 
     print_confusion_matrix(data, dict @ representation)
 
@@ -73,7 +80,7 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0):
 
     # This is kind of disgusting but it lets me swap between np's matmul and a custom numba matmul based on
     #    whichever is more efficient
-    error_term = (mat_mul2(mat_mul2(dict, representation) + data, representation.transpose()))
+    error_term = (dict @ representation - data) @ representation.transpose()
     lasso_term = np.zeros(dict.shape) + lamb  # broadcasts lasso gradient to all terms, will change later for other term
         # TODO make sure this actually broadcasts how i want it to
     return error_term + lasso_term
@@ -86,6 +93,7 @@ def get_data_matrices():
     data_ra1 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
     data_ra2 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('sin_dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
     total_ra = np.hstack((data_ra1, data_ra2))
+    print(total_ra.shape)
     return total_ra
 
 
