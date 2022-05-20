@@ -35,12 +35,10 @@ def dict_learning_custom_matrix(data, target_dimension):
     # This tells us how often to recompute the representation matrix (using least squares)
     dictionary_gradient_steps = 1
 
-    for iteration in range(1, 500):
+    for iteration in range(1, 10000):
         if iteration % dictionary_gradient_steps == 0:
-            print("iteration:", iteration)
-            print("generating new representation matrix")
             representation = np.linalg.lstsq(dict, data)[0]
-        if iteration > 10:
+        if iteration == 10:
             dictionary_gradient_steps = 50
         dict_gradient = compute_dictionary_gradient(dict, representation, data, lamb=lamb)
 
@@ -49,17 +47,21 @@ def dict_learning_custom_matrix(data, target_dimension):
 
 
         if iteration % steps_between_probings == 1:
+
+            # display input to impatient user
+            print("iteration:", iteration, "\nloss =", loss_function_no_lasso(data, dict, representation))
+            if loss_function_no_lasso(data, dict, representation) < .5:
+                break
+
             # probing step, try a few gradient descent steps with different alpha sizes
             dict_big_alpha = dict + np.zeros(dict.shape)
             dict_small_alpha = dict + np.zeros(dict.shape)
             dict_same_alpha = dict + np.zeros(dict.shape)
 
-            print("iteration:", iteration, "\nloss =", loss_function_no_lasso(data, dict, representation))
             for i in range(10):
                 dict_same_alpha -= alpha * compute_dictionary_gradient(dict_same_alpha, representation, data)
                 dict_small_alpha -= (alpha / probe_multiplier) * compute_dictionary_gradient(dict_small_alpha, representation, data)
                 dict_big_alpha -= (alpha * probe_multiplier) * compute_dictionary_gradient(dict_big_alpha, representation, data)
-                print(dict)
             loss_big = loss_function_no_lasso(data, dict_big_alpha, representation)
             loss_small = loss_function_no_lasso(data, dict_small_alpha, representation)
             loss_same = loss_function_no_lasso(data, dict_same_alpha, representation)
