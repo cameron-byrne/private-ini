@@ -18,7 +18,7 @@ def dict_learning_custom_matrix(data, target_dimension):
     but the gradient descent itself needs to be modified to change the step size over time for better convergence.
     '''
     timer = Timer()
-    alpha = .020  # step size for grad descent, .001 seems to work well
+    alpha = .010  # step size for grad descent, .001 seems to work well
     steps_between_probings = 100
     probe_multiplier = 2
     lamb = 0
@@ -52,7 +52,7 @@ def dict_learning_custom_matrix(data, target_dimension):
             print("iteration:", iteration, "\nloss =", loss_function_no_lasso(data, dict, representation))
             if loss_function_no_lasso(data, dict, representation) < .5:
                 break
-
+'''
             # probing step, try a few gradient descent steps with different alpha sizes
             dict_big_alpha = dict + np.zeros(dict.shape)
             dict_small_alpha = dict + np.zeros(dict.shape)
@@ -75,7 +75,7 @@ def dict_learning_custom_matrix(data, target_dimension):
                 print(f"Probe complete. Alpha shrinks to {round(alpha, 5)}")
             else:
                 print(f"Probe complete. Alpha stays at {round(alpha, 5)}")
-
+            '''
     print_confusion_matrix(data, dict @ representation)
 
 
