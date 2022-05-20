@@ -48,6 +48,10 @@ def dict_learning_custom_matrix(data, target_dimension):
         a.append(mat_mult(A, B))
         timer.stop()
 
+    for i in range(10):
+        timer.start()
+        a.append(mat_mul2(A,B))
+
 def get_data_matrices():
     data_ra1 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
     data_ra2 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('sin_dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
@@ -58,6 +62,10 @@ def turn_scipy_matrix_to_numpy_matrix(matrix):
     # This turns the non-gradient-descent-tracked numpy array into something that can be used with autograd
     return np.array(matrix.tolist()).transpose()
 
+
+@njit(parallel=True)
+def mat_mul2(A, B):
+    return A @ B
 
 @njit(parallel=True)
 def mat_mult(A, B):
