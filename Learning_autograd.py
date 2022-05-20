@@ -3,6 +3,7 @@ from autograd import grad
 import scipy.io as sio
 from Learning_multiprocessing import Timer
 
+
 def print_confusion_matrix(act, pred):
     '''
     This function prints the confusion matrix from machine learning, as well as the precision and accuracy metrics
@@ -402,6 +403,27 @@ def turn_scipy_matrix_to_numpy_matrix(matrix):
     return np.array(matrix.tolist()).transpose()
 
 
+
+def test_speeds():
+    timer = Timer()
+    m, n, c = 1000, 1500, 1200
+    A = 50 * np.random.rand(m, n)
+    B = 50 * np.random.rand(n, c)
+    print("A's shape is ", A.shape)
+    print(A)
+    a = []
+
+    print("numpys matrix multiplication:")
+    for i in range(10):
+        timer.start()
+        a.append(A @ B)
+        timer.stop()
+
+    print("numba's matrix multiplication:")
+    for i in range(10):
+        timer.start()
+        a.append(mat_mult(A, B))
+        timer.stop()
 
 def main():
 
