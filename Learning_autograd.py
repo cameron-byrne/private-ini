@@ -378,8 +378,8 @@ def dict_learning_custom_matrix(data, target_dimension):
 
     # when all learning is completed, get reconstruction and do the confusion matrix on it
     reconstructed_matrix = dict @ representation
-    reconstructed_matrix[reconstructed_matrix >= 0.40] = 1
-    reconstructed_matrix[reconstructed_matrix < 0.40] = 0
+    reconstructed_matrix[reconstructed_matrix >= 0.50] = 1
+    reconstructed_matrix[reconstructed_matrix < 0.50] = 0
 
     print_confusion_matrix(data, reconstructed_matrix)
 
