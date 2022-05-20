@@ -21,7 +21,7 @@ def dict_learning_custom_matrix(data, target_dimension):
     alpha = .020  # step size for grad descent, .001 seems to work well
     steps_between_probings = 100
     probe_multiplier = 2
-    lamb = 1
+    lamb = 0
 
     numrows = data.shape[0]
     numcols = data.shape[1]
