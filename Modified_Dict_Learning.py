@@ -10,7 +10,7 @@ def main():
     data_matrix = get_data_matrices()
     print("Data loaded, beginning modified dictionary learning.")
 
-    #do_loss_comparison(data_matrix)
+    # do_loss_comparison(data_matrix)
     dict_learning_custom_matrix(data_matrix, 140)
 
 def do_loss_comparison(data):
@@ -31,7 +31,7 @@ def dict_learning_custom_matrix(data, target_dimension):
     alpha = .010  # step size for grad descent, .001 seems to work well
     steps_between_probings = 100
     probe_multiplier = 2
-    lamb = 0
+    lamb = 1
 
     numrows = data.shape[0]
     numcols = data.shape[1]
@@ -86,8 +86,10 @@ def dict_learning_custom_matrix(data, target_dimension):
             else:
                 print(f"Probe complete. Alpha stays at {round(alpha, 5)}")
             '''
-    print_confusion_matrix(data, dict @ representation)
-    zeroes = np.zeros([1,2])
+    reconstructed_matrix = dict @ representation
+    reconstructed_matrix[reconstructed_matrix >= 0.50] = 1
+    reconstructed_matrix[reconstructed_matrix < 0.50] = 0
+    print_confusion_matrix(data, reconstructed_matrix)
     np.save("dictionary.npy", dict)
     np.save("representation.npy", representation)
 
@@ -110,11 +112,11 @@ def mat_mul2(A, B):
 
 
 def get_data_matrices():
-    data_ra1 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
-    data_ra2 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('sin_dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
-    total_ra = np.hstack((data_ra1, data_ra2))
-    print(total_ra.shape)
-    return total_ra
+    data_sa1 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
+    data_sa2 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('sin_dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
+    total_sa = np.hstack((data_sa1, data_sa2))
+    print(total_sa.shape)
+    return total_sa
 
 
 def turn_scipy_matrix_to_numpy_matrix(matrix):
