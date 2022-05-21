@@ -77,6 +77,9 @@ def dict_learning_custom_matrix(data, target_dimension):
                 print(f"Probe complete. Alpha stays at {round(alpha, 5)}")
             '''
     print_confusion_matrix(data, dict @ representation)
+    zeroes = np.zeros([1,2])
+    np.save("dictionary.npy", dict)
+    np.save("representation.npy", representation)
 
 
 def compute_dictionary_gradient(dict, representation, data, lamb=0):
