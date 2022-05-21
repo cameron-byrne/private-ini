@@ -45,10 +45,10 @@ def dict_learning_custom_matrix(data, target_dimension):
     but the gradient descent itself needs to be modified to change the step size over time for better convergence.
     '''
     timer = Timer()
-    alpha = .010  # step size for grad descent, .001 seems to work well
+    alpha = .0010  # step size for grad descent, .001 seems to work well
     steps_between_probings = 100
     probe_multiplier = 2
-    lamb = 1
+    lamb = 0
 
     numrows = data.shape[0]
     numcols = data.shape[1]
@@ -64,6 +64,7 @@ def dict_learning_custom_matrix(data, target_dimension):
 
     for iteration in range(1, 1000):
         if iteration % dictionary_gradient_steps == 0:
+            dict *= dict.shape[1] / np.linalg.norm(dict, ord='fro')
             representation = np.linalg.lstsq(dict, data)[0]
         if iteration == 10:
             dictionary_gradient_steps = 50
@@ -122,7 +123,6 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0):
     error_term = (dict @ representation - data) @ representation.transpose()
     lasso_term = np.zeros(dict.shape) + lamb  # broadcasts lasso gradient to all terms, will change later for other term
     lasso_term = np.multiply(lasso_term, np.sign(dict))
-        # TODO make sure this actually broadcasts how i want it to
     return error_term + lasso_term
 
 def mat_mul2(A, B):
