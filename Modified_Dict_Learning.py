@@ -110,7 +110,7 @@ def dict_learning_custom_matrix(data, target_dimension):
     np.save("dictionary.npy", dict)
     np.save("representation.npy", representation)
 
-@njit(parallel=True)
+
 def compute_dictionary_gradient(dict, representation, data, lamb=0):
     '''
     Anyways, this computes the gradient that the dictionary should follow.
@@ -121,10 +121,7 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0):
     #    whichever is more efficient
     error_term = (dict @ representation - data) @ representation.transpose()
     lasso_term = np.zeros(dict.shape) + lamb  # broadcasts lasso gradient to all terms, will change later for other term
-    for row in prange(dict.shape[0]):
-        for col in range(dict.shape[1]):
-            if dict[row, col] < 0:
-                lasso_term[row, col] *= -1  # pull towards 0 if negative
+    lasso_term = np.multiply(lasso_term, np.sign(dict))
         # TODO make sure this actually broadcasts how i want it to
     return error_term + lasso_term
 
