@@ -10,7 +10,17 @@ def main():
     data_matrix = get_data_matrices()
     print("Data loaded, beginning modified dictionary learning.")
 
-    dict_learning_custom_matrix(data_matrix, 500)
+    #do_loss_comparison(data_matrix)
+    dict_learning_custom_matrix(data_matrix, 140)
+
+def do_loss_comparison(data):
+    dict = np.load("dictionary.npy")
+    representation = np.load("representation.npy")
+    print("loss =", loss_function_no_lasso(data,dict,representation))
+    reconstructed_matrix = dict @ representation
+    reconstructed_matrix[reconstructed_matrix >= 0.50] = 1
+    reconstructed_matrix[reconstructed_matrix < 0.50] = 0
+    print_confusion_matrix(data, reconstructed_matrix)
 
 def dict_learning_custom_matrix(data, target_dimension):
     '''
