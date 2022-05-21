@@ -29,7 +29,7 @@ def do_loss_comparison(data):
         average_total += tot
     average = average_total / dict.shape[1]  # divide by number of columns to get avg number of non-zeros in each col
     print("\naverage used in column:", average)
-    print("total in column:", dict.shape[1])
+    print("total in column:", dict.shape[0])
     print("sparsity percent:", round(100 * average / dict.shape[1], 4))
 
 
@@ -44,11 +44,12 @@ def dict_learning_custom_matrix(data, target_dimension):
     This is the method that can run dictionary learning on the ini dataset. Currently, some optimization has been done,
     but the gradient descent itself needs to be modified to change the step size over time for better convergence.
     '''
+    print("enter lambda")
+    lamb = float(input())
     timer = Timer()
-    alpha = .0010  # step size for grad descent, .001 seems to work well
+    alpha = .010  # step size for grad descent, .001 seems to work well
     steps_between_probings = 100
     probe_multiplier = 2
-    lamb = 0
 
     numrows = data.shape[0]
     numcols = data.shape[1]
@@ -62,7 +63,7 @@ def dict_learning_custom_matrix(data, target_dimension):
     # This tells us how often to recompute the representation matrix (using least squares)
     dictionary_gradient_steps = 1
 
-    for iteration in range(1, 1000):
+    for iteration in range(1, 10000):
         if iteration % dictionary_gradient_steps == 0:
             dict *= dict.shape[1] / np.linalg.norm(dict, ord='fro')
             representation = np.linalg.lstsq(dict, data)[0]
@@ -111,6 +112,20 @@ def dict_learning_custom_matrix(data, target_dimension):
     np.save("dictionary.npy", dict)
     np.save("representation.npy", representation)
 
+    # sparsity examination time
+    print(dict)
+    epsilon = .0001
+    average_total = 0
+    for col in range(dict.shape[1]):
+        tot = 0
+        for row in range(dict.shape[0]):
+            if abs(dict[row, col]) > epsilon:
+                tot -= -1  # if only python had the "++" operator
+        average_total += tot
+    average = average_total / dict.shape[1]  # divide by number of columns to get avg number of non-zeros in each col
+    print("\naverage used in column:", average)
+    print("total in column:", dict.shape[0])
+    print("sparsity percent:", round(100 * average / dict.shape[1], 4))
 
 def compute_dictionary_gradient(dict, representation, data, lamb=0):
     '''
