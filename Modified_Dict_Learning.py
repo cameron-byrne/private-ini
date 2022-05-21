@@ -64,8 +64,9 @@ def dict_learning_custom_matrix(data, target_dimension):
     dictionary_gradient_steps = 1
 
     for iteration in range(1, 10000):
+        dict *= dict.shape[1] / np.linalg.norm(dict, ord='fro')
+
         if iteration % dictionary_gradient_steps == 0:
-            dict *= dict.shape[1] / np.linalg.norm(dict, ord='fro')
             representation = np.linalg.lstsq(dict, data)[0]
         if iteration == 10:
             dictionary_gradient_steps = 50
