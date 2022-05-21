@@ -62,7 +62,7 @@ def dict_learning_custom_matrix(data, target_dimension):
     # This tells us how often to recompute the representation matrix (using least squares)
     dictionary_gradient_steps = 1
 
-    for iteration in range(1, 10000):
+    for iteration in range(1, 1000):
         if iteration % dictionary_gradient_steps == 0:
             representation = np.linalg.lstsq(dict, data)[0]
         if iteration == 10:
