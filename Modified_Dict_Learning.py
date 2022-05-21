@@ -10,13 +10,30 @@ def main():
     data_matrix = get_data_matrices()
     print("Data loaded, beginning modified dictionary learning.")
 
-    # do_loss_comparison(data_matrix)
-    dict_learning_custom_matrix(data_matrix, 140)
+    do_loss_comparison(data_matrix)
+    # dict_learning_custom_matrix(data_matrix, 140)
 
 def do_loss_comparison(data):
     dict = np.load("dictionary.npy")
     representation = np.load("representation.npy")
     print("loss =", loss_function_no_lasso(data,dict,representation))
+
+    print(dict)
+    epsilon = .0001
+    average_total = 0
+    for col in range(dict.shape[1]):
+        tot = 0
+        for row in range(dict.shape[0]):
+            if abs(dict[row, col]) > epsilon:
+                tot -= -1   # if only python had the "++" operator
+        average_total += tot
+    average = average_total / dict.shape[1]  # divide by number of columns to get avg number of non-zeros in each col
+    print("\naverage used in column:", average)
+    print("total in column:", dict.shape[1])
+    print("sparsity percent:", round(100 * average / dict.shape[1], 4))
+
+
+
     reconstructed_matrix = dict @ representation
     reconstructed_matrix[reconstructed_matrix >= 0.50] = 1
     reconstructed_matrix[reconstructed_matrix < 0.50] = 0
@@ -104,6 +121,10 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0):
     #    whichever is more efficient
     error_term = (dict @ representation - data) @ representation.transpose()
     lasso_term = np.zeros(dict.shape) + lamb  # broadcasts lasso gradient to all terms, will change later for other term
+    for row in dict.shape[0]:
+        for col in dict.shape[1]:
+            if dict[row, col] < 0:
+                lasso_term[row, col] *= -1  # pull towards 0 if negative
         # TODO make sure this actually broadcasts how i want it to
     return error_term + lasso_term
 
