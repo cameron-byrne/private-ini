@@ -121,8 +121,8 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0):
     #    whichever is more efficient
     error_term = (dict @ representation - data) @ representation.transpose()
     lasso_term = np.zeros(dict.shape) + lamb  # broadcasts lasso gradient to all terms, will change later for other term
-    for row in dict.shape[0]:
-        for col in dict.shape[1]:
+    for row in range(dict.shape[0]):
+        for col in range(dict.shape[1]):
             if dict[row, col] < 0:
                 lasso_term[row, col] *= -1  # pull towards 0 if negative
         # TODO make sure this actually broadcasts how i want it to
