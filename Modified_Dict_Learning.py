@@ -10,8 +10,8 @@ def main():
     data_matrix = get_data_matrices()
     print("Data loaded, beginning modified dictionary learning.")
 
-    do_loss_comparison(data_matrix)
-    # dict_learning_custom_matrix(data_matrix, 140)
+    # do_loss_comparison(data_matrix)
+    dict_learning_custom_matrix(data_matrix, 140)
 
 def do_loss_comparison(data):
     dict = np.load("dictionary.npy")
