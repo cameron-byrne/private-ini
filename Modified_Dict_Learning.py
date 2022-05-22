@@ -63,75 +63,77 @@ def dict_learning_custom_matrix(data, target_dimension):
     # This tells us how often to recompute the representation matrix (using least squares)
     dictionary_gradient_steps = 1
 
-    for iteration in range(1, 10000):
-        dict *= dict.shape[1] / np.linalg.norm(dict, ord='fro')
+    try:
+        for iteration in range(1, 10000):
+            dict *= dict.shape[1] / np.linalg.norm(dict, ord='fro')
 
-        if iteration % dictionary_gradient_steps == 0:
-            representation = np.linalg.lstsq(dict, data)[0]
-        if iteration == 10:
-            dictionary_gradient_steps = 50
-        dict_gradient = compute_dictionary_gradient(dict, representation, data, lamb=lamb)
+            if iteration % dictionary_gradient_steps == 0:
+                representation = np.linalg.lstsq(dict, data)[0]
+            if iteration == 10:
+                dictionary_gradient_steps = 50
+            dict_gradient = compute_dictionary_gradient(dict, representation, data, lamb=lamb)
 
-        dict -= alpha * dict_gradient
-        #print(dict)
+            dict -= alpha * dict_gradient
+            #print(dict)
 
 
-        if iteration % steps_between_probings == 1:
+            if iteration % steps_between_probings == 1:
 
-            # display input to impatient user
-            print("iteration:", iteration, "\nloss =", loss_function_no_lasso(data, dict, representation))
-            if loss_function_no_lasso(data, dict, representation) < 20:
-                break
-            if loss_function_no_lasso(data, dict, representation) > 150:
-                print("dict =", dict)
-                print("dict fro norm:", np.linalg.norm(dict, ord='fro'))
-                print("repr fro norm:", np.linalg.norm(representation, ord='fro'))
-                break
+                # display input to impatient user
+                print("iteration:", iteration, "\nloss =", loss_function_no_lasso(data, dict, representation))
+                if loss_function_no_lasso(data, dict, representation) < 20:
+                    break
+                if loss_function_no_lasso(data, dict, representation) > 150:
+                    print("dict =", dict)
+                    print("dict fro norm:", np.linalg.norm(dict, ord='fro'))
+                    print("repr fro norm:", np.linalg.norm(representation, ord='fro'))
+                    break
 
-            '''
-            # probing step, try a few gradient descent steps with different alpha sizes
-            dict_big_alpha = dict + np.zeros(dict.shape)
-            dict_small_alpha = dict + np.zeros(dict.shape)
-            dict_same_alpha = dict + np.zeros(dict.shape)
+                '''
+                # probing step, try a few gradient descent steps with different alpha sizes
+                dict_big_alpha = dict + np.zeros(dict.shape)
+                dict_small_alpha = dict + np.zeros(dict.shape)
+                dict_same_alpha = dict + np.zeros(dict.shape)
+    
+                for i in range(10):
+                    dict_same_alpha -= alpha * compute_dictionary_gradient(dict_same_alpha, representation, data)
+                    dict_small_alpha -= (alpha / probe_multiplier) * compute_dictionary_gradient(dict_small_alpha, representation, data)
+                    dict_big_alpha -= (alpha * probe_multiplier) * compute_dictionary_gradient(dict_big_alpha, representation, data)
+                loss_big = loss_function_no_lasso(data, dict_big_alpha, representation)
+                loss_small = loss_function_no_lasso(data, dict_small_alpha, representation)
+                loss_same = loss_function_no_lasso(data, dict_same_alpha, representation)
+    
+                # update alpha based on result of probes
+                if loss_big < loss_same and loss_big < loss_small:
+                    alpha *= probe_multiplier
+                    print(f"Probe complete. Alpha grows to {round(alpha, 5)}")
+                elif loss_small < loss_same and loss_small < loss_big:
+                    alpha /= probe_multiplier
+                    print(f"Probe complete. Alpha shrinks to {round(alpha, 5)}")
+                else:
+                    print(f"Probe complete. Alpha stays at {round(alpha, 5)}")
+                '''
+    finally:
+        reconstructed_matrix = dict @ representation
+        reconstructed_matrix[reconstructed_matrix >= 0.50] = 1
+        reconstructed_matrix[reconstructed_matrix < 0.50] = 0
+        print_confusion_matrix(data, reconstructed_matrix)
+        np.save("dictionary.npy", dict)
+        np.save("representation.npy", representation)
 
-            for i in range(10):
-                dict_same_alpha -= alpha * compute_dictionary_gradient(dict_same_alpha, representation, data)
-                dict_small_alpha -= (alpha / probe_multiplier) * compute_dictionary_gradient(dict_small_alpha, representation, data)
-                dict_big_alpha -= (alpha * probe_multiplier) * compute_dictionary_gradient(dict_big_alpha, representation, data)
-            loss_big = loss_function_no_lasso(data, dict_big_alpha, representation)
-            loss_small = loss_function_no_lasso(data, dict_small_alpha, representation)
-            loss_same = loss_function_no_lasso(data, dict_same_alpha, representation)
-
-            # update alpha based on result of probes
-            if loss_big < loss_same and loss_big < loss_small:
-                alpha *= probe_multiplier
-                print(f"Probe complete. Alpha grows to {round(alpha, 5)}")
-            elif loss_small < loss_same and loss_small < loss_big:
-                alpha /= probe_multiplier
-                print(f"Probe complete. Alpha shrinks to {round(alpha, 5)}")
-            else:
-                print(f"Probe complete. Alpha stays at {round(alpha, 5)}")
-            '''
-    reconstructed_matrix = dict @ representation
-    reconstructed_matrix[reconstructed_matrix >= 0.50] = 1
-    reconstructed_matrix[reconstructed_matrix < 0.50] = 0
-    print_confusion_matrix(data, reconstructed_matrix)
-    np.save("dictionary.npy", dict)
-    np.save("representation.npy", representation)
-
-    # sparsity examination time
-    epsilon = .0001
-    average_total = 0
-    for col in range(dict.shape[1]):
-        tot = 0
-        for row in range(dict.shape[0]):
-            if abs(dict[row, col]) > epsilon:
-                tot -= -1  # if only python had the "++" operator
-        average_total += tot
-    average = average_total / dict.shape[1]  # divide by number of columns to get avg number of non-zeros in each col
-    print("\naverage used in column:", average)
-    print("total in column:", dict.shape[0])
-    print("sparsity percent:", round(100 * average / dict.shape[1], 4))
+        # sparsity examination time
+        epsilon = .0001
+        average_total = 0
+        for col in range(dict.shape[1]):
+            tot = 0
+            for row in range(dict.shape[0]):
+                if abs(dict[row, col]) > epsilon:
+                    tot -= -1  # if only python had the "++" operator
+            average_total += tot
+        average = average_total / dict.shape[1]  # divide by number of columns to get avg number of non-zeros in each col
+        print("\naverage used in column:", average)
+        print("total in column:", dict.shape[0])
+        print("sparsity percent:", round(100 * average / dict.shape[1], 4))
 
 def compute_dictionary_gradient(dict, representation, data, lamb=0):
     '''
