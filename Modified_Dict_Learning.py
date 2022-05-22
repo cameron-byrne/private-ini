@@ -122,7 +122,7 @@ def dict_learning_custom_matrix(data, target_dimension):
         np.save("representation.npy", representation)
 
         # sparsity examination time
-        epsilon = .0001
+        epsilon = .001
         average_total = 0
         for col in range(dict.shape[1]):
             tot = 0
@@ -144,10 +144,10 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0):
     # This is kind of disgusting but it lets me swap between np's matmul and a custom numba matmul based on
     #    whichever is more efficient
     error_term = (dict @ representation - data) @ representation.transpose()
-    error_term *= error_term.shape[1] / np.linalg.norm(error_term, ord='fro')
     lasso_term = np.zeros(dict.shape) + lamb  # broadcasts lasso gradient to all terms, will change later for other term
     lasso_term = np.multiply(lasso_term, np.sign(dict))
-    return error_term + lasso_term
+    total_error = error_term + lasso_term
+    return total_error * total_error.shape[1] / np.linalg.norm(total_error, ord='fro')
 
 def mat_mul2(A, B):
     return A @ B
