@@ -65,12 +65,12 @@ def dict_learning_custom_matrix(data, target_dimension):
     # This tells us how often to recompute the representation matrix (using least squares)
     dictionary_gradient_steps = 1
     is_done = False
-
+    max_iterations = 2000
     # the try block is for ctrl C to terminate the training process while still printing results
     try:
-        for iteration in range(1, 10000000):
+        for iteration in range(1, 100000000):
 
-            # input handling to make life easier in perseus terminal
+            # input handling to make life easier in perseus terminal, only happens after specified number of iterations
             while max_iterations <= iteration:
                 try:
                     print("enter num iters to do, enter 0 if you're done:")
