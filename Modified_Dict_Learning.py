@@ -117,9 +117,16 @@ def dict_learning_custom_matrix(data, target_dimension):
         reconstructed_matrix = dict @ representation
         reconstructed_matrix[reconstructed_matrix >= 0.50] = 1
         reconstructed_matrix[reconstructed_matrix < 0.50] = 0
+
+
         print_confusion_matrix(data, reconstructed_matrix)
         np.save("dictionary.npy", dict)
         np.save("representation.npy", representation)
+
+        #prints out the whole dictionary instead of abbreviated
+        np.set_printoptions(threshold=np.inf)
+        print(dict)
+        np.set_printoptions(threshold=1000)
 
         # sparsity examination time
         epsilon = .001
