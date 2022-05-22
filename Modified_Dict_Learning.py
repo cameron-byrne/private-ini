@@ -142,6 +142,7 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0):
     # This is kind of disgusting but it lets me swap between np's matmul and a custom numba matmul based on
     #    whichever is more efficient
     error_term = (dict @ representation - data) @ representation.transpose()
+    error_term *= error_term.shape[1] / np.linalg.norm(error_term, ord='fro')
     lasso_term = np.zeros(dict.shape) + lamb  # broadcasts lasso gradient to all terms, will change later for other term
     lasso_term = np.multiply(lasso_term, np.sign(dict))
     return error_term + lasso_term
