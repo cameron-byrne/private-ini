@@ -4,6 +4,8 @@ import scipy.io as sio
 from Learning_multiprocessing import Timer
 from Learning_autograd import print_confusion_matrix
 from Learning_autograd import loss_function_no_lasso
+from Learning_autograd import loss_function
+
 from numba import njit, prange
 
 def main():
@@ -62,9 +64,30 @@ def dict_learning_custom_matrix(data, target_dimension):
 
     # This tells us how often to recompute the representation matrix (using least squares)
     dictionary_gradient_steps = 1
+    is_done = False
 
+    # the try block is for ctrl C to terminate the training process while still printing results
     try:
-        for iteration in range(1, 10000):
+        for iteration in range(1, 10000000):
+
+            # input handling to make life easier in perseus terminal
+            while max_iterations <= iteration:
+                try:
+                    print("enter num iters to do, enter 0 if you're done:")
+                    input_iters = input()
+                    max_iterations = int(input_iters)
+                    if max_iterations == 0:
+                        is_done = True
+                        break
+                    print("enter alpha, current alpha is ", round(alpha,4))
+                    alpha = float(input())
+                except:
+                    print("invalid num iters or alpha")
+            if is_done:
+                break
+
+
+
             dict *= dict.shape[1] / np.linalg.norm(dict, ord='fro')
 
             if iteration % dictionary_gradient_steps == 0:
@@ -80,7 +103,8 @@ def dict_learning_custom_matrix(data, target_dimension):
             if iteration % steps_between_probings == 1:
 
                 # display input to impatient user
-                print("iteration:", iteration, "\nloss =", loss_function_no_lasso(data, dict, representation))
+                print("\niteration:", iteration, "\nloss =", loss_function_no_lasso(data, dict, representation))
+                print("lasso loss:", loss_function(data,dict,representation))
                 if loss_function_no_lasso(data, dict, representation) < 20:
                     break
                 if loss_function_no_lasso(data, dict, representation) > 150:
@@ -119,14 +143,15 @@ def dict_learning_custom_matrix(data, target_dimension):
         reconstructed_matrix[reconstructed_matrix < 0.50] = 0
 
 
-        print_confusion_matrix(data, reconstructed_matrix)
-        np.save("dictionary.npy", dict)
-        np.save("representation.npy", representation)
-
         #prints out the whole dictionary instead of abbreviated
         np.set_printoptions(threshold=np.inf)
         print(dict)
         np.set_printoptions(threshold=1000)
+
+
+        print_confusion_matrix(data, reconstructed_matrix)
+        np.save("dictionary.npy", dict)
+        np.save("representation.npy", representation)
 
         # sparsity examination time
         epsilon = .001
