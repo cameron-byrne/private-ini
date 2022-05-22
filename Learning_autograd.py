@@ -150,10 +150,8 @@ def loss_function_half_norm(data, dict, representation, inner_norm=1.0):
     reconstruction_term = np.linalg.norm(data - (dict @ representation))
     return reconstruction_term + lasso_term
 
-def loss_function(data, dict, representation):
+def loss_function(data, dict, representation, lamb=0):
 
-    # sparsity weight term
-    lamb = 10
 
     # First, we'll compute the loss term: [2 norm of the 1 norms of the columns]
     lasso_term = np.array([0.0])

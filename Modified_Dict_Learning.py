@@ -104,7 +104,7 @@ def dict_learning_custom_matrix(data, target_dimension):
 
                 # display input to impatient user
                 print("\niteration:", iteration, "\nloss =", loss_function_no_lasso(data, dict, representation))
-                print("lasso loss:", loss_function(data,dict,representation))
+                print("lasso loss:", loss_function(data,dict,representation,lamb))
                 if loss_function_no_lasso(data, dict, representation) < 20:
                     break
                 if loss_function_no_lasso(data, dict, representation) > 150:
