@@ -80,8 +80,14 @@ def dict_learning_custom_matrix(data, target_dimension):
 
             # display input to impatient user
             print("iteration:", iteration, "\nloss =", loss_function_no_lasso(data, dict, representation))
-            if loss_function_no_lasso(data, dict, representation) < .5:
+            if loss_function_no_lasso(data, dict, representation) < 20:
                 break
+            if loss_function_no_lasso(data, dict, representation) > 150:
+                print("dict =", dict)
+                print("dict fro norm:", np.linalg.norm(dict, ord='fro'))
+                print("repr fro norm:", np.linalg.norm(representation, ord='fro'))
+                break
+
             '''
             # probing step, try a few gradient descent steps with different alpha sizes
             dict_big_alpha = dict + np.zeros(dict.shape)
@@ -114,7 +120,6 @@ def dict_learning_custom_matrix(data, target_dimension):
     np.save("representation.npy", representation)
 
     # sparsity examination time
-    print(dict)
     epsilon = .0001
     average_total = 0
     for col in range(dict.shape[1]):
