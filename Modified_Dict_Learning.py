@@ -120,10 +120,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type):
                         break
                     print("enter alpha, current alpha is ", round(alpha,4))
                     alpha = float(input())
-                    try:
-                        timer.start()
-                    except:
-                        pass
+                    timer.start()
                 except:
                     print("invalid num iters or alpha")
             if is_done:
