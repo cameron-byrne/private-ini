@@ -91,7 +91,11 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type):
     dict = np.random.rand(numrows, target_dimension)
 
     # representations are found quickly via least squares
+    timer.start()
+    print("\nTiming first least squares computation: ")
     representation = np.linalg.lstsq(dict, data)[0]
+    timer.stop()
+
     print(representation.shape)
 
     # This tells us how often to recompute the representation matrix (using least squares)
@@ -99,6 +103,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type):
     is_done = False
     max_iterations = 1
 
+    timer.start()
     # the try block is for ctrl C to terminate the training process while still printing results [and saving matrices]
     try:
         for iteration in range(1, 100000000):
@@ -106,6 +111,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type):
             # input handling to make life easier in perseus terminal, only happens after specified number of iterations
             while max_iterations <= iteration:
                 try:
+                    timer.stop()
                     print("enter num iters to do, enter 0 if you're done:")
                     input_iters = input()
                     max_iterations = int(input_iters)
@@ -114,6 +120,10 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type):
                         break
                     print("enter alpha, current alpha is ", round(alpha,4))
                     alpha = float(input())
+                    try:
+                        timer.start()
+                    except:
+                        pass
                 except:
                     print("invalid num iters or alpha")
             if is_done:
@@ -140,7 +150,8 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type):
                 print("lasso loss:", loss_function(data,dict,representation,lamb))
                 if loss_function_no_lasso(data, dict, representation) < 20:
                     break
-                if loss_function_no_lasso(data, dict, representation) > 150:
+                if loss_function_no_lasso(data, dict, representation) > 30000:
+                    #this is just for debugging numerical instability
                     print("dict =", dict)
                     print("dict fro norm:", np.linalg.norm(dict, ord='fro'))
                     print("repr fro norm:", np.linalg.norm(representation, ord='fro'))
@@ -177,9 +188,9 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type):
 
 
         #prints out the whole dictionary instead of abbreviated
-        np.set_printoptions(threshold=np.inf)
-        print(dict)
-        np.set_printoptions(threshold=1000)
+        #np.set_printoptions(threshold=np.inf)
+        #print(dict)
+        #np.set_printoptions(threshold=1000)
 
 
         print_confusion_matrix(data, reconstructed_matrix)
@@ -198,7 +209,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type):
         average = average_total / dict.shape[1]  # divide by number of columns to get avg number of non-zeros in each col
         print("\naverage used in column:", average)
         print("total in column:", dict.shape[0])
-        print("sparsity percent:", round(100 * average / dict.shape[1], 4))
+        print("sparsity percent:", round(100 * average / dict.shape[0], 4))
 
 def compute_dictionary_gradient(dict, representation, data, lamb=0):
     '''
