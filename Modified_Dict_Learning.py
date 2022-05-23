@@ -18,13 +18,13 @@ def main():
     elif receptor_type == "RA":
         target_dimension = 237
     elif receptor_type == "SA":
-        target_dimension = 140
+        target_dimension = 170
 
     data_matrix = get_data_matrices(receptor_type)
     print("Data loaded, beginning modified dictionary learning.")
 
-    # do_loss_comparison(data_matrix, receptor_type)
-    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
+    do_loss_comparison(data_matrix, receptor_type)
+    # dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
 
 
 def do_loss_comparison(data, receptor_type):
@@ -32,7 +32,7 @@ def do_loss_comparison(data, receptor_type):
     representation = np.load("representation" + receptor_type + ".npy")
 
     print(dict)
-    epsilon = .003
+    epsilon = .1
     average_total = 0
     for col in range(dict.shape[1]):
         tot = 0
@@ -52,14 +52,14 @@ def do_loss_comparison(data, receptor_type):
     # print("loss =", loss_function_no_lasso(data,dict,representation))
     reconstructed_matrix = dict @ representation
 
-    cutoff = .4
+    cutoff = .36
     reconstructed_matrix[reconstructed_matrix >= cutoff] = 1
     reconstructed_matrix[reconstructed_matrix < cutoff] = 0
     print_confusion_matrix(data, reconstructed_matrix)
 
 
 def calculate_sparsity(dict):
-    epsilon = .001
+    epsilon = .01
     average_total = 0
     for col in range(dict.shape[1]):
         tot = 0
