@@ -112,6 +112,9 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type):
             while max_iterations <= iteration:
                 try:
                     timer.stop()
+                except:
+                    pass
+                try:
                     print("enter num iters to do, enter 0 if you're done:")
                     input_iters = input()
                     max_iterations = int(input_iters)
