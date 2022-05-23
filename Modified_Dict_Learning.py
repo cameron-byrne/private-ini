@@ -23,8 +23,8 @@ def main():
     data_matrix = get_data_matrices(receptor_type)
     print("Data loaded, beginning modified dictionary learning.")
 
-    do_loss_comparison(data_matrix, receptor_type)
-    # dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
+    # do_loss_comparison(data_matrix, receptor_type)
+    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
 
 
 def do_loss_comparison(data, receptor_type):
