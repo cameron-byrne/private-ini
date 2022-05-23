@@ -163,7 +163,7 @@ def loss_function(data, dict, representation, lamb=0):
                 thing_to_square += dict[row, col]
             else:
                 thing_to_square -= dict[row, col]
-        lasso_term += thing_to_square * thing_to_square
+        lasso_term += thing_to_square # * thing_to_square
     lasso_term = lamb * lasso_term
 
     reconstruction_term = np.linalg.norm(data - (dict @ representation))
@@ -411,28 +411,3 @@ def test_speeds():
     print(A)
     a = []
 
-    print("numpys matrix multiplication:")
-    for i in range(10):
-        timer.start()
-        a.append(A @ B)
-        timer.stop()
-
-    print("numba's matrix multiplication:")
-    for i in range(10):
-        timer.start()
-        a.append(mat_mult(A, B))
-        timer.stop()
-
-def main():
-
-    # we merge the linear and sin datasets here (1 second of each)
-    data_ra1 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
-    data_ra2 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('sin_dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
-    total_ra = np.hstack((data_ra1, data_ra2))
-    print(data_ra1.shape)
-    print(data_ra2.shape)
-    print(total_ra.shape)
-    dict_learning_custom_matrix(total_ra, target_dimension=125)
-
-if __name__ == "__main__":
-    main()

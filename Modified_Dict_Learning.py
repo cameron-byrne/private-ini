@@ -8,48 +8,80 @@ from Learning_autograd import loss_function
 
 from numba import njit, prange
 
+
 def main():
-    data_matrix = get_data_matrices()
+    receptor_type = "SA"  # options are SA (562 neurons), RA (948), PC (196)
+
+    # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
+    if receptor_type == "PC":
+        target_dimension = 49
+    elif receptor_type == "RA":
+        target_dimension = 237
+    elif receptor_type == "SA":
+        target_dimension = 140
+
+    data_matrix = get_data_matrices(receptor_type)
     print("Data loaded, beginning modified dictionary learning.")
 
-    # do_loss_comparison(data_matrix)
-    dict_learning_custom_matrix(data_matrix, 140)
+    # do_loss_comparison(data_matrix, receptor_type)
+    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
 
-def do_loss_comparison(data):
-    dict = np.load("dictionary.npy")
-    representation = np.load("representation.npy")
-    print("loss =", loss_function_no_lasso(data,dict,representation))
+
+def do_loss_comparison(data, receptor_type):
+    dict = np.load("dictionary" + receptor_type + ".npy")
+    representation = np.load("representation" + receptor_type + ".npy")
 
     print(dict)
-    epsilon = .0001
+    epsilon = .003
     average_total = 0
     for col in range(dict.shape[1]):
         tot = 0
         for row in range(dict.shape[0]):
             if abs(dict[row, col]) > epsilon:
                 tot -= -1   # if only python had the "++" operator
+            else:
+                dict[row,col] = 0
+        average_total += tot
+    representation = np.linalg.lstsq(dict,data)[0]
+    average = average_total / dict.shape[1]  # divide by number of columns to get avg number of non-zeros in each col
+    print("\naverage used in column:", average)
+    print("total in column:", dict.shape[0])
+    print("sparsity percent:", round(100 * average / dict.shape[0], 4))
+
+
+    # print("loss =", loss_function_no_lasso(data,dict,representation))
+    reconstructed_matrix = dict @ representation
+
+    cutoff = .4
+    reconstructed_matrix[reconstructed_matrix >= cutoff] = 1
+    reconstructed_matrix[reconstructed_matrix < cutoff] = 0
+    print_confusion_matrix(data, reconstructed_matrix)
+
+
+def calculate_sparsity(dict):
+    epsilon = .001
+    average_total = 0
+    for col in range(dict.shape[1]):
+        tot = 0
+        for row in range(dict.shape[0]):
+            if abs(dict[row, col]) > epsilon:
+                tot -= -1  # if only python had the "++" operator
+            else:
+                dict[row, col] = 0
         average_total += tot
     average = average_total / dict.shape[1]  # divide by number of columns to get avg number of non-zeros in each col
     print("\naverage used in column:", average)
     print("total in column:", dict.shape[0])
-    print("sparsity percent:", round(100 * average / dict.shape[1], 4))
+    print("sparsity percent:", round(100 * average / dict.shape[0], 4))
 
-
-
-    reconstructed_matrix = dict @ representation
-    reconstructed_matrix[reconstructed_matrix >= 0.50] = 1
-    reconstructed_matrix[reconstructed_matrix < 0.50] = 0
-    print_confusion_matrix(data, reconstructed_matrix)
-
-def dict_learning_custom_matrix(data, target_dimension):
+def dict_learning_custom_matrix(data, target_dimension, receptor_type):
     '''
-    This is the method that can run dictionary learning on the ini dataset. Currently, some optimization has been done,
-    but the gradient descent itself needs to be modified to change the step size over time for better convergence.
+    This method runs the dictionary learning algorithm, but with a lasso penalty term on
     '''
     print("enter lambda")
     lamb = float(input())
     timer = Timer()
-    alpha = .010  # step size for grad descent, .001 seems to work well
+    alpha = .010  # step size for grad descent, .01 seems to work well
     steps_between_probings = 100
     probe_multiplier = 2
 
@@ -65,8 +97,9 @@ def dict_learning_custom_matrix(data, target_dimension):
     # This tells us how often to recompute the representation matrix (using least squares)
     dictionary_gradient_steps = 1
     is_done = False
-    max_iterations = 2000
-    # the try block is for ctrl C to terminate the training process while still printing results
+    max_iterations = 1
+
+    # the try block is for ctrl C to terminate the training process while still printing results [and saving matrices]
     try:
         for iteration in range(1, 100000000):
 
@@ -150,8 +183,8 @@ def dict_learning_custom_matrix(data, target_dimension):
 
 
         print_confusion_matrix(data, reconstructed_matrix)
-        np.save("dictionary.npy", dict)
-        np.save("representation.npy", representation)
+        np.save("dictionary" + receptor_type + ".npy", dict)
+        np.save("representation" + receptor_type + ".npy", representation)
 
         # sparsity examination time
         epsilon = .001
@@ -185,16 +218,33 @@ def mat_mul2(A, B):
     return A @ B
 
 
-def get_data_matrices():
-    data_sa1 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
-    data_sa2 = turn_scipy_matrix_to_numpy_matrix(sio.loadmat('sin_dataset1.mat', struct_as_record=True)['data_sa'].squeeze())
-    total_sa = np.hstack((data_sa1, data_sa2))
-    print(total_sa.shape)
-    return total_sa
+def get_data_matrices(receptor_type):
+    matrices_to_stack_horizontally = []
+
+    if receptor_type == "SA":
+        index = 'data_sa'
+    if receptor_type == "RA":
+        index = 'data_ra'
+    if receptor_type == "PC":
+        index = 'data_pc'
+
+    lin_matrix = sio.loadmat('total_lin_dataset8.mat', struct_as_record=True)[index]
+    sin_matrix = sio.loadmat('total_sin_dataset16.mat', struct_as_record=True)[index]
+    for i in range(lin_matrix.shape[0]):
+        minimatrix = lin_matrix[i,:,:].squeeze()
+        matrices_to_stack_horizontally.append(turn_scipy_matrix_to_numpy_matrix(minimatrix))
+
+    for i in range(sin_matrix.shape[0]):
+        minimatrix = sin_matrix[i, :, :].squeeze()
+        matrices_to_stack_horizontally.append(turn_scipy_matrix_to_numpy_matrix(minimatrix))
+
+    final_data = np.hstack(tuple(matrices_to_stack_horizontally))
+    print("final data shape =", final_data.shape)
+    return final_data
 
 
 def turn_scipy_matrix_to_numpy_matrix(matrix):
-    # This turns the non-gradient-descent-tracked numpy array into something that can be used with autograd
+    # This turns the non-gradient-descent-tracked scipy array into something that can be used with autograd
     return np.array(matrix.tolist()).transpose()
 
 
