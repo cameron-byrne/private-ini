@@ -10,7 +10,7 @@ from numba import njit, prange
 
 
 def main():
-    receptor_type = "RA"  # options are SA (562 neurons), RA (948), PC (196)
+    receptor_type = "PC"  # options are SA (562 neurons), RA (948), PC (196)
 
     # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
     if receptor_type == "PC":
@@ -20,11 +20,13 @@ def main():
     elif receptor_type == "SA":
         target_dimension = 170
 
-    data_matrix = get_data_matrices(receptor_type)
+    data_matrix = get_data_matrices(receptor_type, is_test=False)
+    test_matrix = get_data_matrices(receptor_type, is_test=True)
+
     print("Data loaded, beginning modified dictionary learning.")
 
-    # do_loss_comparison(data_matrix, receptor_type)
-    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
+    do_loss_comparison(test_matrix, receptor_type)
+    # dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
 
 
 def do_loss_comparison(data, receptor_type):
@@ -51,7 +53,7 @@ def do_loss_comparison(data, receptor_type):
     # print("loss =", loss_function_no_lasso(data,dict,representation))
     reconstructed_matrix = dict @ representation
 
-    cutoff = .36
+    cutoff = .40
     reconstructed_matrix[reconstructed_matrix >= cutoff] = 1
     reconstructed_matrix[reconstructed_matrix < cutoff] = 0
     print_confusion_matrix(data, reconstructed_matrix)
@@ -65,8 +67,7 @@ def do_loss_comparison(data, receptor_type):
             actual_column_list.append(data[:, col].transpose())
         reconstructed_group = np.vstack(tuple(reconstructed_column_list)).transpose()
         actual_group = np.vstack(tuple(actual_column_list)).transpose()
-        print(reconstructed_group.shape)
-        print("\n\n group:", group)
+        print("\n group:", group)
         print_confusion_matrix(actual_group, reconstructed_group)
 
 
@@ -87,7 +88,7 @@ def calculate_sparsity(dict):
     print("total in column:", dict.shape[0])
     print("sparsity percent:", round(100 * average / dict.shape[0], 4))
 
-def dict_learning_custom_matrix(data, target_dimension, receptor_type):
+def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None):
     '''
     This method runs the dictionary learning algorithm, but with a lasso penalty term on
     '''
@@ -101,7 +102,8 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type):
     numrows = data.shape[0]
     numcols = data.shape[1]
 
-    dict = np.random.rand(numrows, target_dimension)
+    if dict is None:
+        dict = np.random.rand(numrows, target_dimension)
 
     # representations are found quickly via least squares
     timer.start()
@@ -242,7 +244,7 @@ def mat_mul2(A, B):
     return A @ B
 
 
-def get_data_matrices(receptor_type):
+def get_data_matrices(receptor_type, is_test):
     matrices_to_stack_horizontally = []
 
     if receptor_type == "SA":
@@ -251,9 +253,13 @@ def get_data_matrices(receptor_type):
         index = 'data_ra'
     if receptor_type == "PC":
         index = 'data_pc'
+    if is_test:
+        lin_matrix = sio.loadmat('total_lin_dataset_test4.mat', struct_as_record=True)[index]
+        sin_matrix = sio.loadmat('total_sin_dataset_test16.mat', struct_as_record=True)[index]
+    else:
+        lin_matrix = sio.loadmat('total_lin_dataset8.mat', struct_as_record=True)[index]
+        sin_matrix = sio.loadmat('total_sin_dataset16.mat', struct_as_record=True)[index]
 
-    lin_matrix = sio.loadmat('total_lin_dataset8.mat', struct_as_record=True)[index]
-    sin_matrix = sio.loadmat('total_sin_dataset16.mat', struct_as_record=True)[index]
     for i in range(lin_matrix.shape[0]):
         minimatrix = lin_matrix[i,:,:].squeeze()
         matrices_to_stack_horizontally.append(turn_scipy_matrix_to_numpy_matrix(minimatrix))
