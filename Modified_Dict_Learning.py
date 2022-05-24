@@ -10,7 +10,7 @@ from numba import njit, prange
 
 
 def main():
-    receptor_type = "SA"  # options are SA (562 neurons), RA (948), PC (196)
+    receptor_type = "RA"  # options are SA (562 neurons), RA (948), PC (196)
 
     # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
     if receptor_type == "PC":
@@ -23,8 +23,8 @@ def main():
     data_matrix = get_data_matrices(receptor_type)
     print("Data loaded, beginning modified dictionary learning.")
 
-    # do_loss_comparison(data_matrix, receptor_type)
-    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
+    do_loss_comparison(data_matrix, receptor_type)
+    # dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
 
 
 def do_loss_comparison(data, receptor_type):
@@ -32,7 +32,7 @@ def do_loss_comparison(data, receptor_type):
     representation = np.load("representation" + receptor_type + ".npy")
 
     print(dict)
-    epsilon = .1
+    epsilon = .01
     average_total = 0
     for col in range(dict.shape[1]):
         tot = 0
@@ -48,7 +48,6 @@ def do_loss_comparison(data, receptor_type):
     print("total in column:", dict.shape[0])
     print("sparsity percent:", round(100 * average / dict.shape[0], 4))
 
-
     # print("loss =", loss_function_no_lasso(data,dict,representation))
     reconstructed_matrix = dict @ representation
 
@@ -56,6 +55,20 @@ def do_loss_comparison(data, receptor_type):
     reconstructed_matrix[reconstructed_matrix >= cutoff] = 1
     reconstructed_matrix[reconstructed_matrix < cutoff] = 0
     print_confusion_matrix(data, reconstructed_matrix)
+
+    print(range(reconstructed_matrix.shape[1] // 1000))
+    for group in range(reconstructed_matrix.shape[1] // 1000):
+        reconstructed_column_list = []
+        actual_column_list = []
+        for col in range(group * 1000, (group + 1) * 1000):
+            reconstructed_column_list.append(reconstructed_matrix[:, col])
+            actual_column_list.append(data[:, col].transpose())
+        reconstructed_group = np.vstack(tuple(reconstructed_column_list)).transpose()
+        actual_group = np.vstack(tuple(actual_column_list)).transpose()
+        print(reconstructed_group.shape)
+        print("\n\n group:", group)
+        print_confusion_matrix(actual_group, reconstructed_group)
+
 
 
 def calculate_sparsity(dict):
