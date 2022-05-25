@@ -268,7 +268,7 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0, using_alt_pe
         lasso_term = np.multiply(lasso_term, np.sign(dict))
         total_error = error_term + lasso_term
     else:
-        alt_penalty = np.sign(dict) * compute_alt_penalty(dict)
+        alt_penalty = lamb * np.sign(dict) * compute_alt_penalty(dict)
         total_error = error_term + alt_penalty
     return total_error * total_error.shape[1] / np.linalg.norm(total_error, ord='fro')
 
@@ -284,7 +284,7 @@ def compute_alt_penalty(dict):
         # now can compute gradient for this column in particular
         for row in prange(dict.shape[0]):
             alt_penalty[row, col] = tot_sum / np.sqrt(abs(dict[row, col]) + 1)
-    
+
     return alt_penalty
 
 def mat_mul2(A, B):
