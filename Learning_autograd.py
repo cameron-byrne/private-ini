@@ -8,6 +8,8 @@ def print_confusion_matrix(act, pred):
     '''
     This function prints the confusion matrix from machine learning, as well as the precision and accuracy metrics
     given the actual and predicted matrices.
+
+    Returns (accuracy, precision, recall)
     '''
     total_firing = np.sum(act)
     total_zeroes = 0
@@ -61,16 +63,19 @@ def print_confusion_matrix(act, pred):
         fnr = 0
 
     if TP != 0 or FP != 0:
-        prec = round(TP / (TP + FP), 4)
+        precision = round(TP / (TP + FP), 4)
     else:
-        prec = 0
+        precision = 0
 
+    recall = tpr
+    accuracy = round((TP + TN) / (TP + TN + FP + FN), 4)
     print("accuracy =", round((TP + TN) / (TP + TN + FP + FN), 4))
-    print("precision = ", prec)
+    print("precision = ", precision)
     print("false positive rate =", fpr, "\n"
           "false negative rate =", fnr, "\n"
           "true negative rate =", tnr, "\n"
           "true positive rate =", tpr, "\n")
+    return accuracy, precision, recall
 
 
 def Func2(v1, v2):

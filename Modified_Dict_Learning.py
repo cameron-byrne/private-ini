@@ -10,7 +10,7 @@ from numba import njit, prange
 
 
 def main():
-    receptor_type = "PC"  # options are SA (562 neurons), RA (948), PC (196)
+    receptor_type = "SA"  # options are SA (562 neurons), RA (948), PC (196)
 
     # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
     if receptor_type == "PC":
@@ -25,7 +25,7 @@ def main():
 
     print("Data loaded, beginning modified dictionary learning.")
 
-    #do_loss_comparison(test_matrix, receptor_type)
+    # do_loss_comparison(data_matrix, receptor_type)
     dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
 
 
@@ -34,8 +34,19 @@ def do_loss_comparison(data, receptor_type):
     representation = np.load("representation" + receptor_type + ".npy")
 
     print(dict)
-    epsilon = .01
+    if receptor_type == "PC":
+        epsilon = .04
+    elif receptor_type == "SA":
+        epsilon = .04
+    elif receptor_type == "RA":
+        epsilon = .04
+    else:
+        raise Exception("you specified an invalid receptor type lol")
+
+
     average_total = 0
+    dictionary_column_totals = []
+
     for col in range(dict.shape[1]):
         tot = 0
         for row in range(dict.shape[0]):
@@ -44,6 +55,7 @@ def do_loss_comparison(data, receptor_type):
             else:
                 dict[row,col] = 0
         average_total += tot
+        dictionary_column_totals.append(tot)
     representation = np.linalg.lstsq(dict,data)[0]
     average = average_total / dict.shape[1]  # divide by number of columns to get avg number of non-zeros in each col
     print("\naverage used in column:", average)
@@ -53,11 +65,19 @@ def do_loss_comparison(data, receptor_type):
     # print("loss =", loss_function_no_lasso(data,dict,representation))
     reconstructed_matrix = dict @ representation
 
-    cutoff = .40
+    if receptor_type == "SA":
+        cutoff = .36
+    elif receptor_type == "PC":
+        cutoff = .4
+    else:
+        cutoff = .36
     reconstructed_matrix[reconstructed_matrix >= cutoff] = 1
     reconstructed_matrix[reconstructed_matrix < cutoff] = 0
     print_confusion_matrix(data, reconstructed_matrix)
 
+    accuracy_list = []
+    precision_list = []
+    recall_list = []
     print(range(reconstructed_matrix.shape[1] // 1000))
     for group in range(reconstructed_matrix.shape[1] // 1000):
         reconstructed_column_list = []
@@ -68,25 +88,33 @@ def do_loss_comparison(data, receptor_type):
         reconstructed_group = np.vstack(tuple(reconstructed_column_list)).transpose()
         actual_group = np.vstack(tuple(actual_column_list)).transpose()
         print("\n group:", group)
-        print_confusion_matrix(actual_group, reconstructed_group)
 
+        # data analysis for each one
+        acc, prec, recall = print_confusion_matrix(actual_group, reconstructed_group)
+        accuracy_list.append(acc)
+        precision_list.append(prec)
+        recall_list.append(recall)
 
+    # we'll look at min, max, and average
+    print("\nAccuracy")
+    print_metrics(accuracy_list)
 
-def calculate_sparsity(dict):
-    epsilon = .01
-    average_total = 0
-    for col in range(dict.shape[1]):
-        tot = 0
-        for row in range(dict.shape[0]):
-            if abs(dict[row, col]) > epsilon:
-                tot -= -1  # if only python had the "++" operator
-            else:
-                dict[row, col] = 0
-        average_total += tot
-    average = average_total / dict.shape[1]  # divide by number of columns to get avg number of non-zeros in each col
-    print("\naverage used in column:", average)
-    print("total in column:", dict.shape[0])
-    print("sparsity percent:", round(100 * average / dict.shape[0], 4))
+    print("\nPrecision")
+    print_metrics(precision_list)
+
+    print("\nRecall")
+    print_metrics(recall_list)
+
+    print("\nDictionary Column Sparsity")
+    for i, value in enumerate(dictionary_column_totals):
+        dictionary_column_totals[i] = value / dict.shape[0]
+    print_metrics(dictionary_column_totals)
+
+def print_metrics(lis):
+    print("avg:", round(sum(lis) / len(lis), 4))
+    print("max:", round(max(lis), 4))
+    print("min:", min(lis))
+
 
 def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None):
     '''
@@ -152,7 +180,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
                 representation = np.linalg.lstsq(dict, data)[0]
             if iteration == 10:
                 dictionary_gradient_steps = 50
-            dict_gradient = compute_dictionary_gradient(dict, representation, data, lamb=lamb)
+            dict_gradient = compute_dictionary_gradient(dict, representation, data, lamb=lamb, using_alt_penalty=True)
 
             dict -= alpha * dict_gradient
             #print(dict)
@@ -209,8 +237,8 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
 
 
         print_confusion_matrix(data, reconstructed_matrix)
-        np.save("dictionary" + receptor_type + ".npy", dict)
-        np.save("representation" + receptor_type + ".npy", representation)
+        np.save("ALTdictionary" + receptor_type + ".npy", dict)
+        np.save("ALTrepresentation" + receptor_type + ".npy", representation)
 
         # sparsity examination time
         epsilon = .001
@@ -226,7 +254,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
         print("total in column:", dict.shape[0])
         print("sparsity percent:", round(100 * average / dict.shape[0], 4))
 
-def compute_dictionary_gradient(dict, representation, data, lamb=0):
+def compute_dictionary_gradient(dict, representation, data, lamb=0, using_alt_penalty=False):
     '''
     Anyways, this computes the gradient that the dictionary should follow.
     lamb is the coefficient for the wacky shit we're adding on at the end [the 1 norm to get sparsity of dict cols]
@@ -235,10 +263,29 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0):
     # This is kind of disgusting but it lets me swap between np's matmul and a custom numba matmul based on
     #    whichever is more efficient
     error_term = (dict @ representation - data) @ representation.transpose()
-    lasso_term = np.zeros(dict.shape) + lamb  # broadcasts lasso gradient to all terms, will change later for other term
-    lasso_term = np.multiply(lasso_term, np.sign(dict))
-    total_error = error_term + lasso_term
+    if not using_alt_penalty:
+        lasso_term = np.zeros(dict.shape) + lamb  # broadcasts lasso gradient to all terms, will change later for other term
+        lasso_term = np.multiply(lasso_term, np.sign(dict))
+        total_error = error_term + lasso_term
+    else:
+        alt_penalty = np.sign(dict) * compute_alt_penalty(dict)
+        total_error = error_term + alt_penalty
     return total_error * total_error.shape[1] / np.linalg.norm(total_error, ord='fro')
+
+@njit(parallel=True)
+def compute_alt_penalty(dict):
+    alt_penalty = np.zeros(dict.shape)
+    for col in prange(dict.shape[1]):
+        # first compute sum term
+        tot_sum = 0
+        for row in prange(dict.shape[0]):
+            tot_sum += np.sqrt(abs(dict[row, col]) + 1)
+
+        # now can compute gradient for this column in particular
+        for row in prange(dict.shape[0]):
+            alt_penalty[row, col] = tot_sum / np.sqrt(abs(dict[row, col]) + 1)
+    
+    return alt_penalty
 
 def mat_mul2(A, B):
     return A @ B
