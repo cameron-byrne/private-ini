@@ -10,7 +10,7 @@ from numba import njit, prange
 
 
 def main():
-    receptor_type = "RA"  # options are SA (562 neurons), RA (948), PC (196)
+    receptor_type = "PC"  # options are SA (562 neurons), RA (948), PC (196)
 
     # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
     if receptor_type == "PC":
@@ -25,8 +25,8 @@ def main():
 
     print("Data loaded, beginning modified dictionary learning.")
 
-    # do_loss_comparison(data_matrix, receptor_type)
-    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
+    do_loss_comparison(data_matrix, receptor_type)
+    # dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
 
 
 def do_loss_comparison(data, receptor_type):
