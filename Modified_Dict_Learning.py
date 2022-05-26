@@ -10,7 +10,7 @@ from numba import njit, prange
 
 
 def main():
-    receptor_type = "SA"  # options are SA (562 neurons), RA (948), PC (196)
+    receptor_type = "RA"  # options are SA (562 neurons), RA (948), PC (196)
 
     # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
     if receptor_type == "PC":
@@ -30,14 +30,14 @@ def main():
 
 
 def do_loss_comparison(data, receptor_type):
-    dict = np.load("dictionary" + receptor_type + ".npy")
-    representation = np.load("representation" + receptor_type + ".npy")
+    dict = np.load("ALTdictionary" + receptor_type + ".npy")
+    representation = np.load("ALTrepresentation" + receptor_type + ".npy")
 
     print(dict)
     if receptor_type == "PC":
         epsilon = .04
     elif receptor_type == "SA":
-        epsilon = .04
+        epsilon = .005
     elif receptor_type == "RA":
         epsilon = .04
     else:
@@ -46,7 +46,7 @@ def do_loss_comparison(data, receptor_type):
 
     average_total = 0
     dictionary_column_totals = []
-
+    '''
     for col in range(dict.shape[1]):
         tot = 0
         for row in range(dict.shape[0]):
@@ -56,6 +56,18 @@ def do_loss_comparison(data, receptor_type):
                 dict[row,col] = 0
         average_total += tot
         dictionary_column_totals.append(tot)
+    '''
+    # use only the top n of each row
+    n = 10
+    for col in range(dict.shape[1]):
+        # idea: store top n indices, sorted, every time checking new, see if abs(dict[index]) is greater than lowest
+        # in top_n. If so, sort it into top_n, removing the lowest
+        # after top n indices are gotten, set all dict elements to zero that aren't those top n
+        top_n = []
+        for row in range(dict.shape[0]):
+            pass
+
+
     representation = np.linalg.lstsq(dict,data)[0]
     average = average_total / dict.shape[1]  # divide by number of columns to get avg number of non-zeros in each col
     print("\naverage used in column:", average)
@@ -256,8 +268,9 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
 
 def compute_dictionary_gradient(dict, representation, data, lamb=0, using_alt_penalty=False):
     '''
-    Anyways, this computes the gradient that the dictionary should follow.
+    This computes the gradient that the dictionary should follow.
     lamb is the coefficient for the wacky shit we're adding on at the end [the 1 norm to get sparsity of dict cols]
+        [or the 1/2 norm that isn't actually a norm]
     '''
 
     # This is kind of disgusting but it lets me swap between np's matmul and a custom numba matmul based on
