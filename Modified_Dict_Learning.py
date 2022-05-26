@@ -203,21 +203,19 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
                 # display input to impatient user
                 print("\niteration:", iteration, "\nloss =", loss_function_no_lasso(data, dict, representation))
                 print("lasso loss:", loss_function(data,dict,representation,lamb))
-                if loss_function_no_lasso(data, dict, representation) < 20:
-                    break
+
                 if loss_function_no_lasso(data, dict, representation) > 30000:
-                    #this is just for debugging numerical instability
+                    # this is just for debugging numerical instability, typical loss values start at 300 or so
                     print("dict =", dict)
                     print("dict fro norm:", np.linalg.norm(dict, ord='fro'))
                     print("repr fro norm:", np.linalg.norm(representation, ord='fro'))
                     break
 
-                '''
                 # probing step, try a few gradient descent steps with different alpha sizes
                 dict_big_alpha = dict + np.zeros(dict.shape)
                 dict_small_alpha = dict + np.zeros(dict.shape)
                 dict_same_alpha = dict + np.zeros(dict.shape)
-    
+
                 for i in range(10):
                     dict_same_alpha -= alpha * compute_dictionary_gradient(dict_same_alpha, representation, data)
                     dict_small_alpha -= (alpha / probe_multiplier) * compute_dictionary_gradient(dict_small_alpha, representation, data)
@@ -235,7 +233,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
                     print(f"Probe complete. Alpha shrinks to {round(alpha, 5)}")
                 else:
                     print(f"Probe complete. Alpha stays at {round(alpha, 5)}")
-                '''
+
     finally:
         reconstructed_matrix = dict @ representation
         reconstructed_matrix[reconstructed_matrix >= 0.50] = 1
