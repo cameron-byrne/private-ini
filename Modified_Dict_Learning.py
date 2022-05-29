@@ -25,8 +25,8 @@ def main():
 
     print("Data loaded, beginning modified dictionary learning.")
 
-    do_loss_comparison(test_matrix, receptor_type)
-    # dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
+    # do_loss_comparison(test_matrix, receptor_type)
+    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
 
 
 def do_loss_comparison(data, receptor_type):
@@ -295,8 +295,8 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
 
 
         print_confusion_matrix(data, reconstructed_matrix)
-        np.save("ALTdictionary" + receptor_type + ".npy", dict)
-        np.save("ALTrepresentation" + receptor_type + ".npy", representation)
+        np.save("ALTdictionary" + receptor_type + "BIG.npy", dict)
+        np.save("ALTrepresentation" + receptor_type + "BIG.npy", representation)
 
         # sparsity examination time
         epsilon = .001
