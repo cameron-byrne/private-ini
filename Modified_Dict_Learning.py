@@ -10,7 +10,7 @@ from numba import njit, prange
 import matplotlib.pyplot as plt
 
 def main():
-    receptor_type = "PC"  # options are SA (562 neurons), RA (948), PC (196)
+    receptor_type = "SA"  # options are SA (562 neurons), RA (948), PC (196)
 
     # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
     if receptor_type == "PC":
