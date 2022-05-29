@@ -109,24 +109,24 @@ min: 0.028481012658227847
 ---------------------------
 ALT SA RESULTS
 Accuracy
-avg: 0.9955
+avg: 0.9954
 max: 1.0
-min: 0.9759
+min: 0.9765
 
 Precision
-avg: 0.9577
+avg: 0.9676
 max: 1.0
-min: 0.9018
+min: 0.9014
 
 Recall
-avg: 0.8496
+avg: 0.8712
 max: 1.0
-min: 0.7449
+min: 0.783
 
 Dictionary Column Sparsity
-avg: 0.0108
-max: 0.2722
-min: 0.0017793594306049821
+avg: 0.043
+max: 0.4431
+min: 0.02491103202846975
 
 -----------------------------------------
 ALT PC RESULTS

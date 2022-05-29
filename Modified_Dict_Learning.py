@@ -7,10 +7,10 @@ from Learning_autograd import loss_function_no_lasso
 from Learning_autograd import loss_function
 
 from numba import njit, prange
-
+import matplotlib.pyplot as plt
 
 def main():
-    receptor_type = "SA"  # options are SA (562 neurons), RA (948), PC (196)
+    receptor_type = "PC"  # options are SA (562 neurons), RA (948), PC (196)
 
     # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
     if receptor_type == "PC":
@@ -56,7 +56,7 @@ def do_loss_comparison(data, receptor_type):
                 dict[row,col] = 0
         average_total += tot
         dictionary_column_totals.append(tot)
-
+    
     '''
     # use only the top n most influential of each row
     n = 17
@@ -101,6 +101,9 @@ def do_loss_comparison(data, receptor_type):
         print(total)
 
 
+    plt.matshow(dict)
+    plt.show()
+
 
     representation = np.linalg.lstsq(dict,data)[0]
     average = average_total / dict.shape[1]  # divide by number of columns to get avg number of non-zeros in each col
@@ -114,7 +117,7 @@ def do_loss_comparison(data, receptor_type):
     if receptor_type == "SA":
         cutoff = .36
     elif receptor_type == "PC":
-        cutoff = .4
+        cutoff = .40
     else:
         cutoff = .36
     reconstructed_matrix[reconstructed_matrix >= cutoff] = 1
@@ -141,6 +144,13 @@ def do_loss_comparison(data, receptor_type):
         precision_list.append(prec)
         recall_list.append(recall)
 
+        ''' This is for showing off certain data vs reconstruction matrices
+        if group == 7:
+            plt.matshow(actual_group)
+            plt.show()
+            plt.matshow(reconstructed_group)
+            plt.show()
+        '''
     # we'll look at min, max, and average
     print("\nAccuracy")
     print_metrics(accuracy_list)
@@ -156,10 +166,14 @@ def do_loss_comparison(data, receptor_type):
         dictionary_column_totals[i] = value / dict.shape[0]
     print_metrics(dictionary_column_totals)
 
+
+
+
 def print_metrics(lis):
-    print("avg:", round(sum(lis) / len(lis), 4))
-    print("max:", round(max(lis), 4))
-    print("min:", min(lis))
+    print("min, average, and max")
+    print(min(lis))
+    print(round(sum(lis) / len(lis), 4))
+    print(round(max(lis), 4))
 
 
 def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None):
