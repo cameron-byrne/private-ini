@@ -25,8 +25,8 @@ def main():
 
     print("Data loaded, beginning modified dictionary learning.")
 
-    # do_loss_comparison(test_matrix, receptor_type)
-    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
+    do_loss_comparison(test_matrix, receptor_type)
+    # dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
 
 
 def do_loss_comparison(data, receptor_type):
@@ -363,8 +363,8 @@ def get_data_matrices(receptor_type, is_test):
         lin_matrix = sio.loadmat('total_lin_dataset_test4.mat', struct_as_record=True)[index]
         sin_matrix = sio.loadmat('total_sin_dataset_test16.mat', struct_as_record=True)[index]
     else:
-        lin_matrix = sio.loadmat('total_lin_dataset8.mat', struct_as_record=True)[index]
-        sin_matrix = sio.loadmat('total_sin_dataset16.mat', struct_as_record=True)[index]
+        lin_matrix = sio.loadmat('total_lin_dataset_27.mat', struct_as_record=True)[index]
+        sin_matrix = sio.loadmat('total_sin_dataset_162.mat', struct_as_record=True)[index]
 
     for i in range(lin_matrix.shape[0]):
         minimatrix = lin_matrix[i,:,:].squeeze()
