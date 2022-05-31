@@ -10,7 +10,7 @@ from numba import njit, prange
 import matplotlib.pyplot as plt
 
 def main():
-    receptor_type = "PC"  # options are SA (562 neurons), RA (948), PC (196)
+    receptor_type = "RA"  # options are SA (562 neurons), RA (948), PC (196)
 
     # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
     if receptor_type == "PC":
@@ -48,6 +48,7 @@ def do_loss_comparison(data, receptor_type):
     average_total = 0
     dictionary_column_totals = []
 
+    # loop through all columns, get the average number of
     for col in range(dict.shape[1]):
         tot = 0
         for row in range(dict.shape[0]):
@@ -145,13 +146,12 @@ def do_loss_comparison(data, receptor_type):
         precision_list.append(prec)
         recall_list.append(recall)
 
-        ''' This is for showing off certain data vs reconstruction matrices
-        if group == 7:
+        if group == 54:
             plt.matshow(actual_group)
             plt.show()
             plt.matshow(reconstructed_group)
             plt.show()
-        '''
+
     # we'll look at min, max, and average
     print("\nAccuracy")
     print_metrics(accuracy_list)
