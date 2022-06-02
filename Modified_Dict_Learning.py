@@ -10,6 +10,60 @@ from numba import njit, prange
 import matplotlib.pyplot as plt
 
 def main():
+    receptor_type = "SA"  # options are SA (562 neurons), RA (948), PC (196)
+
+    # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
+    if receptor_type == "PC":
+        target_dimension = 49
+    elif receptor_type == "RA":
+        target_dimension = 237
+    elif receptor_type == "SA":
+        target_dimension = 170
+
+    data_matrix = get_data_matrices(receptor_type, is_test=False)
+    test_matrix = get_data_matrices(receptor_type, is_test=True)
+
+    print("Data loaded, beginning modified dictionary learning.")
+
+    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
+    do_loss_comparison(test_matrix, receptor_type)
+
+    receptor_type = "SA"  # options are SA (562 neurons), RA (948), PC (196)
+
+    # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
+    if receptor_type == "PC":
+        target_dimension = 49
+    elif receptor_type == "RA":
+        target_dimension = 237
+    elif receptor_type == "SA":
+        target_dimension = 170
+
+    data_matrix = get_data_matrices(receptor_type, is_test=False)
+    test_matrix = get_data_matrices(receptor_type, is_test=True)
+
+    print("Data loaded, beginning modified dictionary learning.")
+
+    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
+    do_loss_comparison(test_matrix, receptor_type)
+
+    receptor_type = "PC"  # options are SA (562 neurons), RA (948), PC (196)
+
+    # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
+    if receptor_type == "PC":
+        target_dimension = 49
+    elif receptor_type == "RA":
+        target_dimension = 237
+    elif receptor_type == "SA":
+        target_dimension = 170
+
+    data_matrix = get_data_matrices(receptor_type, is_test=False)
+    test_matrix = get_data_matrices(receptor_type, is_test=True)
+
+    print("Data loaded, beginning modified dictionary learning.")
+
+    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
+    do_loss_comparison(test_matrix, receptor_type)
+
     receptor_type = "RA"  # options are SA (562 neurons), RA (948), PC (196)
 
     # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
@@ -28,8 +82,43 @@ def main():
     dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
     do_loss_comparison(test_matrix, receptor_type)
 
+
+def show_feature_on_finger(dict, neuron_type, col=0):
+    if neuron_type == "RA":
+        index = "dist_ra"
+    elif neuron_type == "SA":
+        index = "dist_sa"
+    elif neuron_type == "PC":
+        index = "dist_pc"
+    else:
+        raise Exception("you gave an invalid receptor type lol")
+
+    # shape = (# neurons, 2 [location dimension])
+    # first index # is the particular neuron in question
+    # second index 0 is x
+    # second index 1 is y
+    locations = sio.loadmat('NeuronLocations.mat', struct_as_record=True)[index]
+    used_x = []
+    used_y = []
+    unused_x = []
+    unused_y = []
+    for neuron_index in range(locations.shape[0]):
+        if dict[neuron_index, col] != 0:
+            used_x.append(locations[neuron_index, 0])
+            used_y.append(locations[neuron_index, 1])
+        else:
+            unused_x.append(locations[neuron_index, 0])
+            unused_y.append(locations[neuron_index, 1])
+    plt.scatter(used_x, used_y, label="Used Neurons")
+    plt.scatter(unused_x, unused_y, label="Unused Neurons")
+    plt.title("Neurons Used in Feature " + str(col))
+    plt.legend()
+    plt.show()
+
+
 def do_loss_comparison(data, receptor_type):
     dict = np.load("ALTdictionary" + receptor_type + "BIG.npy")
+
 
     # don't actually load representation, needs to be remade anyways
     # representation = np.load("ALTrepresentation" + receptor_type + ".npy")
@@ -58,42 +147,8 @@ def do_loss_comparison(data, receptor_type):
                 dict[row,col] = 0
         average_total += tot
         dictionary_column_totals.append(tot)
-    
-    '''
-    # use only the top n most influential of each row
-    n = 17
-    for col in range(dict.shape[1]):
-        # idea: store top n indices, sorted, every time checking new, see if abs(dict[index]) is greater than lowest
-        # in top_n. If so, sort it into top_n, removing the lowest
-        # after top n indices are gotten, set all dict elements to zero that aren't those top n
-        top_n = []
-        for i in range(n):
-            top_n.append(i)
 
-        print("new col")
-        print(top_n)
-
-
-        def get_item(row):
-            return dict[row, col]
-        top_n.sort(key=get_item)
-
-        for row in range(n, dict.shape[0]):
-            # if this dict[row,col] element is more influencial than the others, remove smallest of top_n, put new index in
-            if abs(dict[row, col]) > top_n[0]:
-                top_n.pop(0)
-                # sort new guy into top_n
-                top_n.append(row)
-                top_n.sort(key=get_item)
-
-            print(top_n)
-
-        for row in range(dict.shape[0]):
-            if row not in top_n:
-                dict[row,col] = 0
-
-        # now, top_n in column have been found
-    '''
+    show_feature_on_finger(dict, receptor_type, col=0)
 
     for col in range(dict.shape[1]):
         total = 0
