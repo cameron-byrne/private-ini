@@ -238,6 +238,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
     '''
     print("enter lambda")
     lamb = float(input())
+    using_alt_penalty = False
     timer = Timer()
     alpha = .010  # step size for grad descent, .01 seems to work well
     steps_between_probings = 100
@@ -296,7 +297,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
                 representation = np.linalg.lstsq(dict, data)[0]
             if iteration == 10:
                 dictionary_gradient_steps = 50
-            dict_gradient = compute_dictionary_gradient(dict, representation, data, lamb=lamb, using_alt_penalty=True)
+            dict_gradient = compute_dictionary_gradient(dict, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty)
 
             dict -= alpha * dict_gradient
             #print(dict)
@@ -321,9 +322,9 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
                 dict_same_alpha = dict + np.zeros(dict.shape)
 
                 for i in range(10):
-                    dict_same_alpha -= alpha * compute_dictionary_gradient(dict_same_alpha, representation, data)
-                    dict_small_alpha -= (alpha / probe_multiplier) * compute_dictionary_gradient(dict_small_alpha, representation, data)
-                    dict_big_alpha -= (alpha * probe_multiplier) * compute_dictionary_gradient(dict_big_alpha, representation, data)
+                    dict_same_alpha -= alpha * compute_dictionary_gradient(dict_same_alpha, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty)
+                    dict_small_alpha -= (alpha / probe_multiplier) * compute_dictionary_gradient(dict_small_alpha, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty)
+                    dict_big_alpha -= (alpha * probe_multiplier) * compute_dictionary_gradient(dict_big_alpha, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty)
                 loss_big = loss_function_no_lasso(data, dict_big_alpha, representation)
                 loss_small = loss_function_no_lasso(data, dict_small_alpha, representation)
                 loss_same = loss_function_no_lasso(data, dict_same_alpha, representation)
@@ -331,12 +332,12 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
                 # update alpha based on result of probes
                 if loss_big < loss_same and loss_big < loss_small:
                     alpha *= probe_multiplier
-                    print(f"Probe complete. Alpha grows to {round(alpha, 5)}")
+                    print(f"Probe complete. Alpha grows to {round(alpha, 6)}")
                 elif loss_small < loss_same and loss_small < loss_big:
                     alpha /= probe_multiplier
-                    print(f"Probe complete. Alpha shrinks to {round(alpha, 5)}")
+                    print(f"Probe complete. Alpha shrinks to {round(alpha, 6)}")
                 else:
-                    print(f"Probe complete. Alpha stays at {round(alpha, 5)}")
+                    print(f"Probe complete. Alpha stays at {round(alpha, 6)}")
 
     finally:
         reconstructed_matrix = dict @ representation
@@ -351,8 +352,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
 
 
         print_confusion_matrix(data, reconstructed_matrix)
-        np.save("ALTdictionary" + receptor_type + "BIG.npy", dict)
-        np.save("ALTrepresentation" + receptor_type + "BIG.npy", representation)
+        np.save("dictionary" + receptor_type + "BIG.npy", dict)
 
         # sparsity examination time
         epsilon = .001
