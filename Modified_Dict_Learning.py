@@ -10,7 +10,20 @@ from numba import njit, prange
 import matplotlib.pyplot as plt
 
 def main():
-    receptor_type = "SA"  # options are SA (562 neurons), RA (948), PC (196)
+    matrix1 = np.array([[1, 0, 0],
+                       [0, 1, 0],
+                       [0, 0, 1]])
+    matrix2 = np.array([[1, 0, 0],
+                        [0, 1, 0],
+                        [0, 0, 1],
+                        [0, 0, 0]])
+    matrix3 = np.array([[1, 1],
+                        [0, 1]])
+    print(get_orthonormality(matrix1))
+    print(get_orthonormality(matrix2))
+    print(get_orthonormality(matrix3))
+
+    receptor_type = input("enter receptor type")  # options are SA (562 neurons), RA (948), PC (196)
 
     # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
     if receptor_type == "PC":
@@ -19,71 +32,21 @@ def main():
         target_dimension = 237
     elif receptor_type == "SA":
         target_dimension = 170
+    else:
+        raise Exception("you specified an invalid receptor type lol")
 
-    data_matrix = get_data_matrices(receptor_type, is_test=False)
+    #data_matrix = get_data_matrices(receptor_type, is_test=False)
     test_matrix = get_data_matrices(receptor_type, is_test=True)
 
     print("Data loaded, beginning modified dictionary learning.")
 
-    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
+    # dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
     do_loss_comparison(test_matrix, receptor_type)
 
-    receptor_type = "SA"  # options are SA (562 neurons), RA (948), PC (196)
+def get_orthonormality(dict):
+    return np.linalg.norm((dict.transpose() @ dict - np.identity(dict.shape[1])), ord='fro')
 
-    # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
-    if receptor_type == "PC":
-        target_dimension = 49
-    elif receptor_type == "RA":
-        target_dimension = 237
-    elif receptor_type == "SA":
-        target_dimension = 170
-
-    data_matrix = get_data_matrices(receptor_type, is_test=False)
-    test_matrix = get_data_matrices(receptor_type, is_test=True)
-
-    print("Data loaded, beginning modified dictionary learning.")
-
-    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
-    do_loss_comparison(test_matrix, receptor_type)
-
-    receptor_type = "PC"  # options are SA (562 neurons), RA (948), PC (196)
-
-    # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
-    if receptor_type == "PC":
-        target_dimension = 49
-    elif receptor_type == "RA":
-        target_dimension = 237
-    elif receptor_type == "SA":
-        target_dimension = 170
-
-    data_matrix = get_data_matrices(receptor_type, is_test=False)
-    test_matrix = get_data_matrices(receptor_type, is_test=True)
-
-    print("Data loaded, beginning modified dictionary learning.")
-
-    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
-    do_loss_comparison(test_matrix, receptor_type)
-
-    receptor_type = "RA"  # options are SA (562 neurons), RA (948), PC (196)
-
-    # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
-    if receptor_type == "PC":
-        target_dimension = 49
-    elif receptor_type == "RA":
-        target_dimension = 237
-    elif receptor_type == "SA":
-        target_dimension = 170
-
-    data_matrix = get_data_matrices(receptor_type, is_test=False)
-    test_matrix = get_data_matrices(receptor_type, is_test=True)
-
-    print("Data loaded, beginning modified dictionary learning.")
-
-    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
-    do_loss_comparison(test_matrix, receptor_type)
-
-
-def show_feature_on_finger(dict, neuron_type, col=0):
+def get_locality(dict, neuron_type, col=0, show_graph=True):
     if neuron_type == "RA":
         index = "dist_ra"
     elif neuron_type == "SA":
@@ -109,11 +72,27 @@ def show_feature_on_finger(dict, neuron_type, col=0):
         else:
             unused_x.append(locations[neuron_index, 0])
             unused_y.append(locations[neuron_index, 1])
-    plt.scatter(used_x, used_y, label="Used Neurons")
-    plt.scatter(unused_x, unused_y, label="Unused Neurons")
-    plt.title("Neurons Used in Feature " + str(col))
-    plt.legend()
-    plt.show()
+
+    x_avg = sum(used_x) / len(used_x)
+    x_avg_plot = [x_avg]
+    y_avg = sum(used_y) / len(used_y)
+    y_avg_plot = [y_avg]
+
+    if show_graph:
+        plt.scatter(used_x, used_y, label="Used Neurons")
+        plt.scatter(unused_x, unused_y, label="Unused Neurons")
+        plt.scatter(x_avg_plot, y_avg_plot, label="\"Center\" of Feature")
+        plt.title("Neurons Used in Feature " + str(col))
+        plt.legend()
+        plt.show()
+
+    average_distance_from_mean = 0
+    for i in range(len(used_x)):
+        distance = np.sqrt((used_x[i] - x_avg) ** 2 + (used_y[i] - y_avg) ** 2)
+        average_distance_from_mean += distance
+    average_distance_from_mean /= len(used_x)
+    print("average distance from mean for feature", col, "=", average_distance_from_mean)
+    return average_distance_from_mean
 
 
 def do_loss_comparison(data, receptor_type):
@@ -127,7 +106,7 @@ def do_loss_comparison(data, receptor_type):
     if receptor_type == "PC":
         epsilon = .04
     elif receptor_type == "SA":
-        epsilon = .005
+        epsilon = .01
     elif receptor_type == "RA":
         epsilon = .01
     else:
@@ -148,7 +127,7 @@ def do_loss_comparison(data, receptor_type):
         average_total += tot
         dictionary_column_totals.append(tot)
 
-    show_feature_on_finger(dict, receptor_type, col=0)
+    get_locality(dict, receptor_type, col=0)
 
     for col in range(dict.shape[1]):
         total = 0
@@ -423,7 +402,7 @@ def get_data_matrices(receptor_type, is_test):
         sin_matrix = sio.loadmat('total_sin_dataset_162.mat', struct_as_record=True)[index]
 
     for i in range(lin_matrix.shape[0]):
-        minimatrix = lin_matrix[i,:,:].squeeze()
+        minimatrix = lin_matrix[i, :, :].squeeze()
         matrices_to_stack_horizontally.append(turn_scipy_matrix_to_numpy_matrix(minimatrix))
 
     for i in range(sin_matrix.shape[0]):
