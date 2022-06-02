@@ -10,18 +10,6 @@ from numba import njit, prange
 import matplotlib.pyplot as plt
 
 def main():
-    matrix1 = np.array([[1, 0, 0],
-                       [0, 1, 0],
-                       [0, 0, 1]])
-    matrix2 = np.array([[1, 0, 0],
-                        [0, 1, 0],
-                        [0, 0, 1],
-                        [0, 0, 0]])
-    matrix3 = np.array([[1, 1],
-                        [0, 1]])
-    print(get_orthonormality(matrix1))
-    print(get_orthonormality(matrix2))
-    print(get_orthonormality(matrix3))
 
     receptor_type = input("enter receptor type")  # options are SA (562 neurons), RA (948), PC (196)
 
@@ -35,7 +23,7 @@ def main():
     else:
         raise Exception("you specified an invalid receptor type lol")
 
-    #data_matrix = get_data_matrices(receptor_type, is_test=False)
+    data_matrix = get_data_matrices(receptor_type, is_test=False)
     test_matrix = get_data_matrices(receptor_type, is_test=True)
 
     print("Data loaded, beginning modified dictionary learning.")
