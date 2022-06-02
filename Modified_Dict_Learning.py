@@ -28,7 +28,7 @@ def main():
 
     print("Data loaded, beginning modified dictionary learning.")
 
-    # dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
+    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
     do_loss_comparison(test_matrix, receptor_type)
 
 def get_orthonormality(dict):
