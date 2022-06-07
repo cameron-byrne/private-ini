@@ -24,7 +24,7 @@ def main():
 
     input_string = ""
     while input_string != "train" and input_string != "test":
-        input_string = input("Are you training or testing? Please enter one of the following in lowercase: (train/test)")
+        input_string = input("Are you training or testing? Enter one: (train/test)\n")
     if input_string == "train":
         is_training = True
     else:
@@ -97,9 +97,13 @@ def compute_loss(data, dict, representation, lamb, using_alt_penalty=False, usin
     else:
         sparsity_penalty = compute_L1_penalty(dict)
     if using_balanced_formulation:
-        error_term = np.power(np.linalg.norm((beta * data + 1) * (data - dict@representation)), 2)
+        error_term = np.linalg.norm((beta * data + 1) * (data - dict@representation))
     else:
-        error_term = np.power(np.linalg.norm(data - dict @ representation), 2)
+        error_term = np.linalg.norm(data - dict @ representation)
+    print("data =", data)
+    print()
+    print("beta * data + 1 =", beta * data + 1)
+    print("\n")
     return sparsity_penalty + error_term
 
 
@@ -331,10 +335,11 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
             if iteration % steps_between_probings == 1:
 
                 # display input to impatient user
-                print("\niteration:", iteration, "\nloss =", compute_loss(data, dict, representation, lamb=lamb,
+                prior_loss = compute_loss(data, dict, representation, lamb=lamb,
                                                                           using_alt_penalty=using_alt_penalty,
                                                                           using_balanced_formulation=is_using_balanced_error,
-                                                                          beta=beta))
+                                                                          beta=beta)
+                print("\niteration:", iteration, "\nloss =", prior_loss)
                 if using_alt_penalty:
                     sparsity_penalty = lamb * compute_alt_penalty(dict)
                 else:
@@ -369,7 +374,11 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
                 loss_same = compute_loss(data, dict_same_alpha, representation, lamb=lamb, using_alt_penalty=using_alt_penalty,
                                         using_balanced_formulation=is_using_balanced_error,
                                         beta=beta)
-    
+
+                if prior_loss < loss_small:
+                    alpha /= probe_multiplier
+                    print(f"All probes were worse, decreasing alpha to {round(alpha, 6)}")
+
                 # update alpha based on result of probes
                 if loss_big < loss_same and loss_big < loss_small:
                     alpha *= probe_multiplier
