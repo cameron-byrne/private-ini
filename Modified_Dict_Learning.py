@@ -23,12 +23,12 @@ def main():
     else:
         raise Exception("you specified an invalid receptor type lol")
 
-    data_matrix = get_data_matrices(receptor_type, is_test=False)
+    # data_matrix = get_data_matrices(receptor_type, is_test=False)
     test_matrix = get_data_matrices(receptor_type, is_test=True)
 
     print("Data loaded, beginning modified dictionary learning.")
 
-    dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
+    # dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
     do_loss_comparison(test_matrix, receptor_type)
 
 def get_orthonormality(dict):
@@ -67,8 +67,8 @@ def get_locality(dict, neuron_type, col=0, show_graph=True):
     y_avg_plot = [y_avg]
 
     if show_graph:
-        plt.scatter(used_x, used_y, label="Used Neurons")
         plt.scatter(unused_x, unused_y, label="Unused Neurons")
+        plt.scatter(used_x, used_y, label="Used Neurons")
         plt.scatter(x_avg_plot, y_avg_plot, label="\"Center\" of Feature")
         plt.title("Neurons Used in Feature " + str(col))
         plt.legend()
@@ -92,7 +92,7 @@ def do_loss_comparison(data, receptor_type):
 
     print(dict)
     if receptor_type == "PC":
-        epsilon = .04
+        epsilon = .01
     elif receptor_type == "SA":
         epsilon = .01
     elif receptor_type == "RA":
@@ -203,7 +203,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
     '''
     This method runs the dictionary learning algorithm, but with a lasso penalty term on
     '''
-    print("enter lambda")
+    print("enter lambda:")
     lamb = float(input())
     using_alt_penalty = False
     timer = Timer()
@@ -213,6 +213,20 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
 
     numrows = data.shape[0]
     numcols = data.shape[1]
+
+    input_string = ""   # used to ask user if they want to use the balanced error version
+    while input_string != "y" and input_string != "n":
+        input_string = input("do you want to use the balanced formulation? (y/n)")
+    if input_string == "y":
+        is_using_balanced_error = True
+    else:
+        is_using_balanced_error = False
+
+    if is_using_balanced_error:
+        beta = compute_beta(data)
+        u = (beta * data + 1) * (beta * data + 1)
+    else:
+        u = None
 
     if dict is None:
         dict = np.random.rand(numrows, target_dimension)
@@ -264,7 +278,8 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
                 representation = np.linalg.lstsq(dict, data)[0]
             if iteration == 10:
                 dictionary_gradient_steps = 50
-            dict_gradient = compute_dictionary_gradient(dict, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty)
+            dict_gradient = compute_dictionary_gradient(dict, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty,
+                                                        using_balanced_formulation=is_using_balanced_error, u=u)
 
             dict -= alpha * dict_gradient
             #print(dict)
@@ -289,9 +304,12 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
                 dict_same_alpha = dict + np.zeros(dict.shape)
 
                 for i in range(10):
-                    dict_same_alpha -= alpha * compute_dictionary_gradient(dict_same_alpha, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty)
-                    dict_small_alpha -= (alpha / probe_multiplier) * compute_dictionary_gradient(dict_small_alpha, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty)
-                    dict_big_alpha -= (alpha * probe_multiplier) * compute_dictionary_gradient(dict_big_alpha, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty)
+                    dict_same_alpha -= alpha * compute_dictionary_gradient(dict_same_alpha, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty,
+                                                        using_balanced_formulation=is_using_balanced_error, u=u)
+                    dict_small_alpha -= (alpha / probe_multiplier) * compute_dictionary_gradient(dict_small_alpha, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty,
+                                                        using_balanced_formulation=is_using_balanced_error, u=u)
+                    dict_big_alpha -= (alpha * probe_multiplier) * compute_dictionary_gradient(dict_big_alpha, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty,
+                                                        using_balanced_formulation=is_using_balanced_error, u=u)
                 loss_big = loss_function_no_lasso(data, dict_big_alpha, representation)
                 loss_small = loss_function_no_lasso(data, dict_small_alpha, representation)
                 loss_same = loss_function_no_lasso(data, dict_same_alpha, representation)
@@ -319,7 +337,13 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
 
 
         print_confusion_matrix(data, reconstructed_matrix)
-        np.save("dictionary" + receptor_type + "BIG.npy", dict)
+
+        # extra_string is just used to make saved dictionary file names unique
+        if is_using_balanced_error:
+            extra_string = "balanced"
+        else:
+            extra_string = ""
+        np.save(extra_string + "dictionary" + receptor_type + "BIG.npy", dict)
 
         # sparsity examination time
         epsilon = .001
@@ -335,16 +359,28 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
         print("total in column:", dict.shape[0])
         print("sparsity percent:", round(100 * average / dict.shape[0], 4))
 
-def compute_dictionary_gradient(dict, representation, data, lamb=0, using_alt_penalty=False):
+def compute_dictionary_gradient(dict, representation, data, lamb=0, using_alt_penalty=False, using_balanced_formulation=False, u=None):
     '''
     This computes the gradient that the dictionary should follow.
     lamb is the coefficient for the wacky shit we're adding on at the end [the 1 norm to get sparsity of dict cols]
         [or the 1/2 norm that isn't actually a norm]
+
+    the gradient is two things being added together: an error term and a sparsity penalty term
+    ------------------------------------------------------------------------------------------------
+    standard error term: ||x - Dr||^2
+    balanced formulation error term: ||(Bx + 1) {hadamard product} (x - Dr)||^2
+
+    standard penalty term: sum over all 'i' of ||d_i||_1  [1 norm of dictionary columns]
+    alt penalty term: sum over all i of g(d_i), where g is given by the equation for the Lp norm, p=1/2
+        *note, this means g is neither convex nor a norm, as it violates the triangle inequality
     '''
 
-    # This is kind of disgusting but it lets me swap between np's matmul and a custom numba matmul based on
-    #    whichever is more efficient
-    error_term = (dict @ representation - data) @ representation.transpose()
+
+    if using_balanced_formulation:
+        error_term = (u * (dict @ representation) - data * u) @ np.transpose(representation)
+    else:
+        error_term = (dict @ representation - data) @ representation.transpose()
+
     if not using_alt_penalty:
         lasso_term = np.zeros(dict.shape) + lamb  # broadcasts lasso gradient to all terms, will change later for other term
         lasso_term = np.multiply(lasso_term, np.sign(dict))
@@ -353,6 +389,24 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0, using_alt_pe
         alt_penalty = lamb * np.sign(dict) * compute_alt_penalty(dict)
         total_error = error_term + alt_penalty
     return total_error * total_error.shape[1] / np.linalg.norm(total_error, ord='fro')
+
+
+@njit(parallel=True)
+def compute_beta(data):
+    '''
+    This method computes the beta constant used in the balanced formulation
+    Only needs to be computed once
+    '''
+    num_ones = 0
+    for row in range(data.shape[0]):
+        for col in prange(data.shape[1]):
+            if data[row,col] == 1:
+                num_ones += 1
+
+    total = data.shape[0] * data.shape[1]
+    return total / num_ones - 2
+
+
 
 @njit(parallel=True)
 def compute_alt_penalty(dict):
