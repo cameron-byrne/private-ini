@@ -4,7 +4,6 @@ import scipy.io as sio
 from Learning_multiprocessing import Timer
 from Learning_autograd import print_confusion_matrix
 from Learning_autograd import loss_function_no_lasso
-from Learning_autograd import loss_function
 
 from numba import njit, prange
 import matplotlib.pyplot as plt
@@ -91,6 +90,38 @@ def get_locality(dict, neuron_type, col=0, show_graph=True):
     average_distance_from_mean /= len(used_x)
     print("average distance from mean for feature", col, "=", average_distance_from_mean)
     return average_distance_from_mean
+
+def compute_loss(data, dict, representation, lamb, using_alt_penalty=False, using_balanced_formulation=False, beta=None):
+    if using_alt_penalty:
+        sparsity_penalty = lamb * compute_alt_penalty(dict)
+    else:
+        sparsity_penalty = compute_L1_penalty(dict)
+    if using_balanced_formulation:
+        error_term = np.power(np.linalg.norm((beta * data + 1) * (data - dict@representation)), 2)
+    else:
+        error_term = np.power(np.linalg.norm(data - dict @ representation), 2)
+    return sparsity_penalty + error_term
+
+
+@njit(parallel=True)
+def compute_L1_penalty(dict):
+    total = 0
+    for row in prange(dict.shape[0]):
+        for col in range(dict.shape[1]):
+            total += np.abs(dict[row, col])
+    return total
+
+
+
+@njit(parallel=True)
+def compute_alt_penalty(dict):
+    total = 0
+    for col in prange(dict.shape[1]):
+        thing_to_square = 0
+        for row in range(dict.shape[0]):
+            thing_to_square += np.power(dict[row,col], .5)
+        total += thing_to_square * thing_to_square
+    return total
 
 
 def do_loss_comparison(data, receptor_type):
@@ -237,6 +268,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
         u = (beta * data + 1) * (beta * data + 1)
     else:
         u = None
+    print("beta computed, beta = ", beta)
 
     if dict is None:
         dict = np.random.rand(numrows, target_dimension)
@@ -244,7 +276,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
     # representations are found quickly via least squares
     timer.start()
     print("\nTiming first least squares computation: ")
-    representation = np.linalg.lstsq(dict, data)[0]
+    representation = np.linalg.lstsq(dict, data, rcond=None)[0]
     timer.stop()
 
     print(representation.shape)
@@ -285,7 +317,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
             dict *= dict.shape[1] / np.linalg.norm(dict, ord='fro')
 
             if iteration % dictionary_gradient_steps == 0:
-                representation = np.linalg.lstsq(dict, data)[0]
+                representation = np.linalg.lstsq(dict, data, rcond=None)[0]
             if iteration == 10:
                 dictionary_gradient_steps = 50
             dict_gradient = compute_dictionary_gradient(dict, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty,
@@ -298,11 +330,18 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
             if iteration % steps_between_probings == 1:
 
                 # display input to impatient user
-                print("\niteration:", iteration, "\nloss =", loss_function_no_lasso(data, dict, representation))
-                print("lasso loss:", loss_function(data,dict,representation,lamb))
+                print("\niteration:", iteration, "\nloss =", compute_loss(data, dict, representation, lamb=lamb,
+                                                                          using_alt_penalty=using_alt_penalty,
+                                                                          using_balanced_formulation=is_using_balanced_error,
+                                                                          beta=beta))
+                if using_alt_penalty:
+                    sparsity_penalty = lamb * compute_alt_penalty(dict)
+                else:
+                    sparsity_penalty = lamb * compute_L1_penalty(dict)
+                print("sparsity penalty loss:", sparsity_penalty)
 
                 if loss_function_no_lasso(data, dict, representation) > 30000:
-                    # this is just for debugging numerical instability, typical loss values start at 300 or so
+                    # this is just for debugging numerical instability, typical loss values start at 1,000 or so
                     print("dict =", dict)
                     print("dict fro norm:", np.linalg.norm(dict, ord='fro'))
                     print("repr fro norm:", np.linalg.norm(representation, ord='fro'))
@@ -320,9 +359,15 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
                                                         using_balanced_formulation=is_using_balanced_error, u=u)
                     dict_big_alpha -= (alpha * probe_multiplier) * compute_dictionary_gradient(dict_big_alpha, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty,
                                                         using_balanced_formulation=is_using_balanced_error, u=u)
-                loss_big = loss_function_no_lasso(data, dict_big_alpha, representation)
-                loss_small = loss_function_no_lasso(data, dict_small_alpha, representation)
-                loss_same = loss_function_no_lasso(data, dict_same_alpha, representation)
+                loss_big = compute_loss(data, dict_big_alpha, representation, lamb=lamb, using_alt_penalty=using_alt_penalty,
+                                        using_balanced_formulation=is_using_balanced_error,
+                                        beta=beta)
+                loss_small = compute_loss(data, dict_small_alpha, representation, lamb=lamb, using_alt_penalty=using_alt_penalty,
+                                        using_balanced_formulation=is_using_balanced_error,
+                                        beta=beta)
+                loss_same = compute_loss(data, dict_same_alpha, representation, lamb=lamb, using_alt_penalty=using_alt_penalty,
+                                        using_balanced_formulation=is_using_balanced_error,
+                                        beta=beta)
     
                 # update alpha based on result of probes
                 if loss_big < loss_same and loss_big < loss_small:
@@ -396,7 +441,7 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0, using_alt_pe
         lasso_term = np.multiply(lasso_term, np.sign(dict))
         total_error = error_term + lasso_term
     else:
-        alt_penalty = lamb * np.sign(dict) * compute_alt_penalty(dict)
+        alt_penalty = lamb * np.sign(dict) * compute_alt_penalty_gradient(dict)
         total_error = error_term + alt_penalty
     return total_error * total_error.shape[1] / np.linalg.norm(total_error, ord='fro')
 
@@ -419,7 +464,7 @@ def compute_beta(data):
 
 
 @njit(parallel=True)
-def compute_alt_penalty(dict):
+def compute_alt_penalty_gradient(dict):
     alt_penalty = np.zeros(dict.shape)
     for col in prange(dict.shape[1]):
         # first compute sum term
