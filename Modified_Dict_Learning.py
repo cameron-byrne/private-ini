@@ -447,7 +447,7 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0, using_alt_pe
     return total_error * total_error.shape[1] / np.linalg.norm(total_error, ord='fro')
 
 
-@njit(parallel=True)
+@njit
 def compute_beta(data):
     '''
     This method computes the beta constant used in the balanced formulation
