@@ -25,7 +25,7 @@ def main():
 
     input_string = ""
     while input_string != "train" and input_string != "test":
-        input_string("Are you training or testing? Please enter one of the following in lowercase: (train/test)")
+        input_string = input("Are you training or testing? Please enter one of the following in lowercase: (train/test)")
     if input_string == "train":
         is_training = True
     else:
