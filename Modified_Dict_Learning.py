@@ -23,12 +23,22 @@ def main():
     else:
         raise Exception("you specified an invalid receptor type lol")
 
-    # data_matrix = get_data_matrices(receptor_type, is_test=False)
+    input_string = ""
+    while input_string != "train" and input_string != "test":
+        input_string("Are you training or testing? Please enter one of the following in lowercase: (train/test)")
+    if input_string == "train":
+        is_training = True
+    else:
+        is_training = False
+
+    if is_training:
+        data_matrix = get_data_matrices(receptor_type, is_test=False)
     test_matrix = get_data_matrices(receptor_type, is_test=True)
 
-    print("Data loaded, beginning modified dictionary learning.")
+    print("Data loaded.")
 
-    # dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
+    if is_training:
+        dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
     do_loss_comparison(test_matrix, receptor_type)
 
 def get_orthonormality(dict):
