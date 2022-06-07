@@ -100,10 +100,6 @@ def compute_loss(data, dict, representation, lamb, using_alt_penalty=False, usin
         error_term = np.linalg.norm((beta * data + 1) * (data - dict@representation))
     else:
         error_term = np.linalg.norm(data - dict @ representation)
-    print("data =", data)
-    print()
-    print("beta * data + 1 =", beta * data + 1)
-    print("\n")
     return sparsity_penalty + error_term
 
 
