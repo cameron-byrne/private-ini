@@ -268,6 +268,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
         u = (beta * data + 1) * (beta * data + 1)
     else:
         u = None
+        beta = None
     print("beta computed, beta = ", beta)
 
     if dict is None:
@@ -459,6 +460,8 @@ def compute_beta(data):
                 num_ones += 1
 
     total = data.shape[0] * data.shape[1]
+    print("total = ", total)
+    print("num_ones = ", num_ones)
     return total / num_ones - 2
 
 
