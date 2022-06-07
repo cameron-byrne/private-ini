@@ -103,7 +103,7 @@ def compute_loss(data, dict, representation, lamb, using_alt_penalty=False, usin
     return sparsity_penalty + error_term
 
 
-@njit(parallel=True)
+@njit
 def compute_L1_penalty(dict):
     total = 0
     for row in prange(dict.shape[0]):
@@ -113,7 +113,7 @@ def compute_L1_penalty(dict):
 
 
 
-@njit(parallel=True)
+@njit
 def compute_alt_penalty(dict):
     total = 0
     for col in prange(dict.shape[1]):
