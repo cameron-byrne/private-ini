@@ -180,12 +180,14 @@ def do_loss_comparison(data, receptor_type):
 
     get_locality(dict, receptor_type, col=0)
 
+    totals = []
     for col in range(dict.shape[1]):
         total = 0
         for row in range(dict.shape[0]):
             if dict[row,col] != 0:
                 total -= -1
-        print(total)
+        totals.add(total)
+    print(totals)
 
 
     plt.matshow(dict)
@@ -231,11 +233,14 @@ def do_loss_comparison(data, receptor_type):
         precision_list.append(prec)
         recall_list.append(recall)
 
-        if group == 54:
+        if group == 3:
             plt.matshow(actual_group)
             plt.show()
             plt.matshow(reconstructed_group)
             plt.show()
+            get_locality(actual_group, receptor_type, col=11)
+            get_locality(reconstructed_group, receptor_type, col=11)
+
 
     # we'll look at min, max, and average
     print("\nAccuracy")
