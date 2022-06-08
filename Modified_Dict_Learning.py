@@ -30,6 +30,7 @@ def main():
     else:
         is_training = False
 
+
     if is_training:
         data_matrix = get_data_matrices(receptor_type, is_test=False)
     test_matrix = get_data_matrices(receptor_type, is_test=True)
@@ -91,7 +92,7 @@ def get_locality(dict, neuron_type, col=0, show_graph=True):
     print("average distance from mean for feature", col, "=", average_distance_from_mean)
     return average_distance_from_mean
 
-def compute_loss(data, dict, representation, lamb, using_alt_penalty=False, using_balanced_formulation=False, beta=None):
+def compute_loss(data, dict, representation, lamb, using_alt_penalty=False, using_balanced_formulation=False, beta=None, using_sparsity_penalty=True):
     if using_alt_penalty:
         sparsity_penalty = lamb * compute_alt_penalty(dict)
     else:
@@ -100,6 +101,10 @@ def compute_loss(data, dict, representation, lamb, using_alt_penalty=False, usin
         error_term = np.linalg.norm((beta * data + 1) * (data - dict@representation))
     else:
         error_term = np.linalg.norm(data - dict @ representation)
+
+    if not using_sparsity_penalty:
+        sparsity_penalty = 0
+
     return sparsity_penalty + error_term
 
 
@@ -125,7 +130,24 @@ def compute_alt_penalty(dict):
 
 
 def do_loss_comparison(data, receptor_type):
-    dict = np.load("ALTdictionary" + receptor_type + "BIG.npy")
+    input_string = ""  # used to ask user if they want to use the balanced error version
+    while input_string != "y" and input_string != "n":
+        input_string = input("do you want to use the balanced formulation? (y/n)")
+    if input_string == "y":
+        file_string_1 = "balanced"
+    else:
+        file_string_1 = ""
+
+    input_string = ""  # used to ask user if they want to use the balanced error version
+    while input_string != "y" and input_string != "n":
+        input_string = input("do you want to use the alt norm formulation? (y/n)")
+    if input_string == "y":
+        file_string_2 = "ALT"
+    else:
+        file_string_2 = ""
+
+    print("loading dictionary:", file_string_1 + file_string_2 + "dictionary" + receptor_type + "BIG.npy")
+    dict = np.load(file_string_1 + file_string_2 + "dictionary" + receptor_type + "BIG.npy")
 
 
     # don't actually load representation, needs to be remade anyways
@@ -331,11 +353,17 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
             if iteration % steps_between_probings == 1:
 
                 # display input to impatient user
-                prior_loss = compute_loss(data, dict, representation, lamb=lamb,
+                prior_loss_to_display = compute_loss(data, dict, representation, lamb=lamb,
                                                                           using_alt_penalty=using_alt_penalty,
                                                                           using_balanced_formulation=is_using_balanced_error,
-                                                                          beta=beta)
-                print("\niteration:", iteration, "\nloss =", prior_loss)
+                                                                          beta=beta,
+                                                                          using_sparsity_penalty=True)
+                prior_loss_no_sparsity_penalty = compute_loss(data, dict, representation, lamb=lamb,
+                                                     using_alt_penalty=using_alt_penalty,
+                                                     using_balanced_formulation=is_using_balanced_error,
+                                                     beta=beta,
+                                                     using_sparsity_penalty=False)
+                print("\niteration:", iteration, "\nloss =", prior_loss_to_display)
                 if using_alt_penalty:
                     sparsity_penalty = lamb * compute_alt_penalty(dict)
                 else:
@@ -361,22 +389,28 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
                                                         using_balanced_formulation=is_using_balanced_error, u=u)
                     dict_big_alpha -= (alpha * probe_multiplier) * compute_dictionary_gradient(dict_big_alpha, representation, data, lamb=lamb, using_alt_penalty=using_alt_penalty,
                                                         using_balanced_formulation=is_using_balanced_error, u=u)
-                loss_big = compute_loss(data, dict_big_alpha, representation, lamb=lamb, using_alt_penalty=using_alt_penalty,
+                loss_big = compute_loss(data, dict_big_alpha, representation, lamb=lamb,
+                                        using_alt_penalty=using_alt_penalty,
                                         using_balanced_formulation=is_using_balanced_error,
-                                        beta=beta)
-                loss_small = compute_loss(data, dict_small_alpha, representation, lamb=lamb, using_alt_penalty=using_alt_penalty,
-                                        using_balanced_formulation=is_using_balanced_error,
-                                        beta=beta)
-                loss_same = compute_loss(data, dict_same_alpha, representation, lamb=lamb, using_alt_penalty=using_alt_penalty,
-                                        using_balanced_formulation=is_using_balanced_error,
-                                        beta=beta)
+                                        beta=beta,
+                                        using_sparsity_penalty=False)
+                loss_small = compute_loss(data, dict_small_alpha, representation, lamb=lamb,
+                                          using_alt_penalty=using_alt_penalty,
+                                          using_balanced_formulation=is_using_balanced_error,
+                                          beta=beta,
+                                          using_sparsity_penalty=False)
+                loss_same = compute_loss(data, dict_same_alpha, representation, lamb=lamb,
+                                         using_alt_penalty=using_alt_penalty,
+                                         using_balanced_formulation=is_using_balanced_error,
+                                         beta=beta,
+                                         using_sparsity_penalty=False)
 
-                if prior_loss < loss_small:
-                    alpha /= probe_multiplier
-                    print(f"All probes were worse, decreasing alpha to {round(alpha, 6)}")
 
                 # update alpha based on result of probes
-                if loss_big < loss_same and loss_big < loss_small:
+                if prior_loss_no_sparsity_penalty < loss_small:
+                    alpha /= probe_multiplier
+                    print(f"All probes were worse, decreasing alpha to {round(alpha, 6)}")
+                elif loss_big < loss_same and loss_big < loss_small:
                     alpha *= probe_multiplier
                     print(f"Probe complete. Alpha grows to {round(alpha, 6)}")
                 elif loss_small < loss_same and loss_small < loss_big:
