@@ -31,15 +31,15 @@ def main():
         is_training = False
 
 
-    if is_training:
-        data_matrix = get_data_matrices(receptor_type, is_test=False)
+    # if is_training:
+    data_matrix = get_data_matrices(receptor_type, is_test=False)
     test_matrix = get_data_matrices(receptor_type, is_test=True)
 
     print("Data loaded.")
 
     if is_training:
         dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
-    do_loss_comparison(test_matrix, receptor_type)
+    do_loss_comparison(data_matrix, receptor_type)
 
 def get_orthonormality(dict):
     return np.linalg.norm((dict.transpose() @ dict - np.identity(dict.shape[1])), ord='fro')
@@ -150,6 +150,7 @@ def do_loss_comparison(data, receptor_type):
     dict = np.load(file_string_1 + file_string_2 + "dictionary" + receptor_type + "BIG.npy")
 
 
+
     # don't actually load representation, needs to be remade anyways
     # representation = np.load("ALTrepresentation" + receptor_type + ".npy")
 
@@ -186,15 +187,17 @@ def do_loss_comparison(data, receptor_type):
         for row in range(dict.shape[0]):
             if dict[row,col] != 0:
                 total -= -1
-        totals.add(total)
-    print(totals)
-
+        totals.append(total)
+    print("column totals:", totals)
 
     plt.matshow(dict)
     plt.show()
 
 
     representation = np.linalg.lstsq(dict,data)[0]
+
+    print("loss on set before rounding: ", compute_loss(data, dict, representation, lamb=0, using_sparsity_penalty=False))
+
     average = average_total / dict.shape[1]  # divide by number of columns to get avg number of non-zeros in each col
     print("\naverage used in column:", average)
     print("total in column:", dict.shape[0])
