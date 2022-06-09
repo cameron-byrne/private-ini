@@ -554,8 +554,8 @@ def get_data_matrices(receptor_type, is_test):
     if receptor_type == "PC":
         index = 'data_pc'
     if is_test:
-        lin_matrix = sio.loadmat('total_lin_dataset_test4.mat', struct_as_record=True)[index]
-        sin_matrix = sio.loadmat('total_sin_dataset_test16.mat', struct_as_record=True)[index]
+        lin_matrix = sio.loadmat('total_lin_dataset_test27.mat', struct_as_record=True)[index]
+        sin_matrix = sio.loadmat('total_sin_dataset_test135.mat', struct_as_record=True)[index]
     else:
         lin_matrix = sio.loadmat('total_lin_dataset_27.mat', struct_as_record=True)[index]
         sin_matrix = sio.loadmat('total_sin_dataset_162.mat', struct_as_record=True)[index]
