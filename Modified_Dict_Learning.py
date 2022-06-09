@@ -156,7 +156,7 @@ def do_loss_comparison(data, receptor_type):
 
     print(dict)
     if receptor_type == "PC":
-        epsilon = .01
+        epsilon = .10
     elif receptor_type == "SA":
         epsilon = .01
     elif receptor_type == "RA":
