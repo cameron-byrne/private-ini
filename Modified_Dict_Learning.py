@@ -276,7 +276,6 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
     '''
     print("enter lambda:")
     lamb = float(input())
-    using_alt_penalty = False
     timer = Timer()
     alpha = .010  # step size for grad descent, .01 seems to work well
     steps_between_probings = 100
@@ -292,6 +291,14 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
         is_using_balanced_error = True
     else:
         is_using_balanced_error = False
+
+    input_string = ""  # used to ask user if they want to use the alt norm version
+    while input_string != "y" and input_string != "n":
+        input_string = input("do you want to use the alt norm formulation? (y/n)")
+    if input_string == "y":
+        using_alt_penalty = True
+    else:
+        using_alt_penalty = False
 
     if is_using_balanced_error:
         beta = compute_beta(data)
@@ -446,7 +453,12 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
             extra_string = "balanced"
         else:
             extra_string = ""
-        np.save(extra_string + "dictionary" + receptor_type + "BIG.npy", dict)
+
+        if using_alt_penalty:
+            file_string2 = "ALT"
+        else:
+            file_string2 = ""
+        np.save(extra_string + file_string2 + "dictionary" + receptor_type + "BIG.npy", dict)
 
         # sparsity examination time
         epsilon = .001
