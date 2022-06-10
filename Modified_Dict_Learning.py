@@ -39,7 +39,7 @@ def main():
 
     if is_training:
         dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
-    do_loss_comparison(data_matrix, receptor_type)
+    do_loss_comparison(test_matrix, receptor_type)
 
 def get_orthonormality(dict):
     return np.linalg.norm((dict.transpose() @ dict - np.identity(dict.shape[1])), ord='fro')
@@ -241,8 +241,8 @@ def do_loss_comparison(data, receptor_type):
             plt.show()
             plt.matshow(reconstructed_group)
             plt.show()
-            get_locality(actual_group, receptor_type, col=11)
-            get_locality(reconstructed_group, receptor_type, col=11)
+            #get_locality(actual_group, receptor_type, col=11)
+            #get_locality(reconstructed_group, receptor_type, col=11)
 
 
     # we'll look at min, max, and average
