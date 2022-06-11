@@ -96,7 +96,7 @@ def compute_loss(data, dict, representation, lamb, using_alt_penalty=False, usin
     if using_alt_penalty:
         sparsity_penalty = lamb * compute_alt_penalty(dict)
     else:
-        sparsity_penalty = compute_L1_penalty(dict)
+        sparsity_penalty = lamb * compute_L1_penalty(dict)
     if using_balanced_formulation:
         error_term = np.linalg.norm((beta * data + 1) * (data - dict@representation))
     else:
@@ -121,10 +121,10 @@ def compute_L1_penalty(dict):
 @njit
 def compute_alt_penalty(dict):
     total = 0
-    for col in prange(dict.shape[1]):
+    for col in range(dict.shape[1]):
         thing_to_square = 0
         for row in range(dict.shape[0]):
-            thing_to_square += np.power(dict[row,col], .5)
+            thing_to_square += np.power(abs(dict[row,col]), .5)
         total += thing_to_square * thing_to_square
     return total
 
