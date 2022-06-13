@@ -435,9 +435,10 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
                     print(f"Probe complete. Alpha stays at {round(alpha, 6)}")
 
     finally:
-        reconstructed_matrix = dict @ representation
-        reconstructed_matrix[reconstructed_matrix >= 0.50] = 1
-        reconstructed_matrix[reconstructed_matrix < 0.50] = 0
+        print("Learning finished, Saving Dictionary")
+        #reconstructed_matrix = dict @ representation
+        #reconstructed_matrix[reconstructed_matrix >= 0.50] = 1
+        #reconstructed_matrix[reconstructed_matrix < 0.50] = 0
 
 
         #prints out the whole dictionary instead of abbreviated
@@ -446,7 +447,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
         #np.set_printoptions(threshold=1000)
 
 
-        print_confusion_matrix(data, reconstructed_matrix)
+        # print_confusion_matrix(data, reconstructed_matrix)
 
         # extra_string is just used to make saved dictionary file names unique
         if is_using_balanced_error:
@@ -459,6 +460,8 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
         else:
             file_string2 = ""
         np.save(extra_string + file_string2 + "dictionary" + receptor_type + "BIG.npy", dict)
+
+        print("Dictionary saved, Beginning testing")
 
         # sparsity examination time
         epsilon = .001
