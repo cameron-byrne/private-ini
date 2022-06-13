@@ -377,7 +377,7 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
                                                      using_alt_penalty=using_alt_penalty,
                                                      using_balanced_formulation=is_using_balanced_error,
                                                      beta=beta,
-                                                     using_sparsity_penalty=False)
+                                                     using_sparsity_penalty=True)
                 print("\niteration:", iteration, "\nloss =", prior_loss_to_display)
                 if using_alt_penalty:
                     sparsity_penalty = lamb * compute_alt_penalty(dict)
@@ -408,17 +408,17 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
                                         using_alt_penalty=using_alt_penalty,
                                         using_balanced_formulation=is_using_balanced_error,
                                         beta=beta,
-                                        using_sparsity_penalty=False)
+                                        using_sparsity_penalty=True)
                 loss_small = compute_loss(data, dict_small_alpha, representation, lamb=lamb,
                                           using_alt_penalty=using_alt_penalty,
                                           using_balanced_formulation=is_using_balanced_error,
                                           beta=beta,
-                                          using_sparsity_penalty=False)
+                                          using_sparsity_penalty=True)
                 loss_same = compute_loss(data, dict_same_alpha, representation, lamb=lamb,
                                          using_alt_penalty=using_alt_penalty,
                                          using_balanced_formulation=is_using_balanced_error,
                                          beta=beta,
-                                         using_sparsity_penalty=False)
+                                         using_sparsity_penalty=True)
 
 
                 # update alpha based on result of probes
