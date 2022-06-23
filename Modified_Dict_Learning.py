@@ -4,9 +4,24 @@ import scipy.io as sio
 from Learning_multiprocessing import Timer
 from Learning_autograd import print_confusion_matrix
 from Learning_autograd import loss_function_no_lasso
+import condensed
 
 from numba import njit, prange
 import matplotlib.pyplot as plt
+
+def eval_old_dict():
+    v_ra = sio.loadmat('feature_spaces_old/feature_spaces.mat', struct_as_record=True)["v_ra"]
+    v_pc = sio.loadmat('feature_spaces_old/feature_spaces.mat', struct_as_record=True)["v_pc"]
+    v_sa = sio.loadmat('feature_spaces_old/feature_spaces.mat', struct_as_record=True)["v_sa"]
+
+    print(v_ra.shape)
+    print(v_pc.shape)
+    print(v_sa.shape)
+
+    test_sa = get_data_matrices("SA", is_test=True)
+    test_ra = get_data_matrices("RA", is_test=True)
+    test_pc = get_data_matrices("PC", is_test=True)
+    evaluate_old_dictionary(data_ra=test_ra, data_sa=test_sa, data_pc=test_pc)
 
 def main():
 
@@ -40,6 +55,7 @@ def main():
     if is_training:
         dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
     do_loss_comparison(test_matrix, receptor_type)
+
 
 def get_orthonormality(dict):
     return np.linalg.norm((dict.transpose() @ dict - np.identity(dict.shape[1])), ord='fro')
@@ -260,6 +276,23 @@ def do_loss_comparison(data, receptor_type):
         dictionary_column_totals[i] = value / dict.shape[0]
     print_metrics(dictionary_column_totals)
 
+def evaluate_old_dictionary(data_ra, data_sa, data_pc):
+    v_ra = sio.loadmat('feature_spaces_old/feature_spaces.mat', struct_as_record=True)["v_ra"]
+    v_pc = sio.loadmat('feature_spaces_old/feature_spaces.mat', struct_as_record=True)["v_pc"]
+    v_sa = sio.loadmat('feature_spaces_old/feature_spaces.mat', struct_as_record=True)["v_sa"]
+
+    reconstructed_ra, reconstructed_sa, reconstructed_pc = condensed.calc(data_ra, data_sa, data_pc, v_ra, v_sa, v_pc)
+
+
+
+    print("traditional dictionary RA test data: ")
+    print_confusion_matrix(data_ra, reconstructed_ra)
+
+    print("\ntraditional dictionary SA test data: ")
+    print_confusion_matrix(data_sa, reconstructed_sa)
+
+    print("\ntraditional dictionary PC test data: ")
+    print_confusion_matrix(data_pc, reconstructed_pc)
 
 
 
@@ -459,6 +492,10 @@ def dict_learning_custom_matrix(data, target_dimension, receptor_type, dict=None
             file_string2 = "ALT"
         else:
             file_string2 = ""
+
+        # if lamb == 0 (floating point), call the matrix VANILLA, for no Sparsity Penalty Function
+        if lamb <= .00000001:
+            file_string2 = "VANILLA"
         np.save(extra_string + file_string2 + "dictionary" + receptor_type + "BIG.npy", dict)
 
         print("Dictionary saved, Beginning testing")
