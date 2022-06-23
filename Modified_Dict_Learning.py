@@ -536,7 +536,9 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0, using_alt_pe
     else:
         error_term = (dict @ representation - data) @ representation.transpose()
 
-    if not using_alt_penalty:
+    if lamb < .00000001:
+        alt_penalty = 0
+    elif not using_alt_penalty:
         lasso_term = np.zeros(dict.shape) + lamb  # broadcasts lasso gradient to all terms, will change later for other term
         lasso_term = np.multiply(lasso_term, np.sign(dict))
         total_error = error_term + lasso_term
