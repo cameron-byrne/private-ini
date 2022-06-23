@@ -98,7 +98,7 @@ def get_locality(dict, neuron_type, col=0, show_graph=True):
         plt.scatter(x_avg_plot, y_avg_plot, label="\"Center\" of Feature")
         plt.title("Neurons Used in Feature " + str(col))
         plt.legend()
-        plt.show()
+        # plt.show()
 
     average_distance_from_mean = 0
     for i in range(len(used_x)):
@@ -194,8 +194,8 @@ def evaluate_dictionary(data, receptor_type):
                 dict[row,col] = 0
         average_total += tot
         dictionary_column_totals.append(tot)
-
-    get_locality(dict, receptor_type, col=0)
+    
+    #get_locality(dict, receptor_type, col=0)
 
     totals = []
     for col in range(dict.shape[1]):
@@ -206,8 +206,8 @@ def evaluate_dictionary(data, receptor_type):
         totals.append(total)
     print("column totals:", totals)
 
-    plt.matshow(dict)
-    plt.show()
+    # plt.matshow(dict)
+    # plt.show()
 
 
     representation = np.linalg.lstsq(dict,data)[0]
@@ -546,7 +546,9 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0, using_alt_pe
     else:
         error_term = (dict @ representation - data) @ representation.transpose()
 
-    if not using_alt_penalty:
+    if lamb < .00000001:
+        alt_penalty = 0
+    elif not using_alt_penalty:
         lasso_term = np.zeros(dict.shape) + lamb  # broadcasts lasso gradient to all terms, will change later for other term
         lasso_term = np.multiply(lasso_term, np.sign(dict))
         total_error = error_term + lasso_term
