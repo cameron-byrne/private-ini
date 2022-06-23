@@ -60,7 +60,7 @@ def main():
 def get_orthonormality(dict):
     return np.linalg.norm((dict.transpose() @ dict - np.identity(dict.shape[1])), ord='fro')
 
-def get_locality(dict, neuron_type, col=0, show_graph=True):
+def get_locality(dict, neuron_type, col=0, show_graph=True, locations=None):
     if neuron_type == "RA":
         index = "dist_ra"
     elif neuron_type == "SA":
@@ -74,7 +74,8 @@ def get_locality(dict, neuron_type, col=0, show_graph=True):
     # first index # is the particular neuron in question
     # second index 0 is x
     # second index 1 is y
-    locations = sio.loadmat('NeuronLocations.mat', struct_as_record=True)[index]
+    if locations is None:
+        locations = sio.loadmat('NeuronLocations.mat', struct_as_record=True)[index]
     used_x = []
     used_y = []
     unused_x = []
@@ -105,7 +106,6 @@ def get_locality(dict, neuron_type, col=0, show_graph=True):
         distance = np.sqrt((used_x[i] - x_avg) ** 2 + (used_y[i] - y_avg) ** 2)
         average_distance_from_mean += distance
     average_distance_from_mean /= len(used_x)
-    print("average distance from mean for feature", col, "=", average_distance_from_mean)
     return average_distance_from_mean
 
 def compute_loss(data, dict, representation, lamb, using_alt_penalty=False, using_balanced_formulation=False, beta=None, using_sparsity_penalty=True):
@@ -161,6 +161,14 @@ def evaluate_dictionary(data, receptor_type):
         file_string_2 = "ALT"
     else:
         file_string_2 = ""
+
+    input_string = ""  # used to ask user if they want to use the balanced error version
+    while input_string != "y" and input_string != "n":
+        input_string = input("do you want to do a stimulus-by-stimulus analysis? (y/n)")
+    if input_string == "y":
+        do_all_stimuli_individually = True
+    else:
+        do_all_stimuli_individually = False
 
     print("loading dictionary:", file_string_1 + file_string_2 + "dictionary" + receptor_type + "BIG.npy")
     dict = np.load(file_string_1 + file_string_2 + "dictionary" + receptor_type + "BIG.npy")
@@ -236,40 +244,41 @@ def evaluate_dictionary(data, receptor_type):
     precision_list = []
     recall_list = []
     print(range(reconstructed_matrix.shape[1] // 1000))
-    for group in range(reconstructed_matrix.shape[1] // 1000):
-        reconstructed_column_list = []
-        actual_column_list = []
-        for col in range(group * 1000, (group + 1) * 1000):
-            reconstructed_column_list.append(reconstructed_matrix[:, col])
-            actual_column_list.append(data[:, col].transpose())
-        reconstructed_group = np.vstack(tuple(reconstructed_column_list)).transpose()
-        actual_group = np.vstack(tuple(actual_column_list)).transpose()
-        print("\n group:", group)
+    if do_all_stimuli_individually:
+        for group in range(reconstructed_matrix.shape[1] // 1000):
+            reconstructed_column_list = []
+            actual_column_list = []
+            for col in range(group * 1000, (group + 1) * 1000):
+                reconstructed_column_list.append(reconstructed_matrix[:, col])
+                actual_column_list.append(data[:, col].transpose())
+            reconstructed_group = np.vstack(tuple(reconstructed_column_list)).transpose()
+            actual_group = np.vstack(tuple(actual_column_list)).transpose()
+            print("\n group:", group)
 
-        # data analysis for each one
-        acc, prec, recall = print_confusion_matrix(actual_group, reconstructed_group)
-        accuracy_list.append(acc)
-        precision_list.append(prec)
-        recall_list.append(recall)
+            # data analysis for each one
+            acc, prec, recall = print_confusion_matrix(actual_group, reconstructed_group)
+            accuracy_list.append(acc)
+            precision_list.append(prec)
+            recall_list.append(recall)
 
-        if group == 3:
-            plt.matshow(actual_group)
-            plt.show()
-            plt.matshow(reconstructed_group)
-            plt.show()
-            #get_locality(actual_group, receptor_type, col=11)
-            #get_locality(reconstructed_group, receptor_type, col=11)
+            if group == 3:
+                plt.matshow(actual_group)
+                plt.show()
+                plt.matshow(reconstructed_group)
+                plt.show()
+                #get_locality(actual_group, receptor_type, col=11)
+                #get_locality(reconstructed_group, receptor_type, col=11)
 
+    if do_all_stimuli_individually:
+        # we'll look at min, max, and average
+        print("\nAccuracy")
+        print_metrics(accuracy_list)
 
-    # we'll look at min, max, and average
-    print("\nAccuracy")
-    print_metrics(accuracy_list)
+        print("\nPrecision")
+        print_metrics(precision_list)
 
-    print("\nPrecision")
-    print_metrics(precision_list)
-
-    print("\nRecall")
-    print_metrics(recall_list)
+        print("\nRecall")
+        print_metrics(recall_list)
 
     print("\nDictionary Column Sparsity")
     for i, value in enumerate(dictionary_column_totals):
@@ -279,7 +288,7 @@ def evaluate_dictionary(data, receptor_type):
     print("\nDictionary Locality Metric")
     localities = []
     for col in range(dict.shape[1]):
-        localities.append(get_locality(col))
+        localities.append(get_locality(dict, receptor_type, col=col))
     print_metrics(localities)
 
     print("\nOrthonormality Metric")
@@ -548,6 +557,7 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0, using_alt_pe
 
     if lamb < .00000001:
         alt_penalty = 0
+        total_error = error_term
     elif not using_alt_penalty:
         lasso_term = np.zeros(dict.shape) + lamb  # broadcasts lasso gradient to all terms, will change later for other term
         lasso_term = np.multiply(lasso_term, np.sign(dict))
@@ -555,6 +565,7 @@ def compute_dictionary_gradient(dict, representation, data, lamb=0, using_alt_pe
     else:
         alt_penalty = lamb * np.sign(dict) * compute_alt_penalty_gradient(dict)
         total_error = error_term + alt_penalty
+
     return total_error * total_error.shape[1] / np.linalg.norm(total_error, ord='fro')
 
 
