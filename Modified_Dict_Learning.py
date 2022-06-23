@@ -82,7 +82,7 @@ def get_locality(dict, neuron_type, col=0, show_graph=True):
         plt.scatter(x_avg_plot, y_avg_plot, label="\"Center\" of Feature")
         plt.title("Neurons Used in Feature " + str(col))
         plt.legend()
-        plt.show()
+        # plt.show()
 
     average_distance_from_mean = 0
     for i in range(len(used_x)):
@@ -178,8 +178,8 @@ def do_loss_comparison(data, receptor_type):
                 dict[row,col] = 0
         average_total += tot
         dictionary_column_totals.append(tot)
-
-    get_locality(dict, receptor_type, col=0)
+    
+    #get_locality(dict, receptor_type, col=0)
 
     totals = []
     for col in range(dict.shape[1]):
@@ -190,8 +190,8 @@ def do_loss_comparison(data, receptor_type):
         totals.append(total)
     print("column totals:", totals)
 
-    plt.matshow(dict)
-    plt.show()
+    # plt.matshow(dict)
+    # plt.show()
 
 
     representation = np.linalg.lstsq(dict,data)[0]
