@@ -54,7 +54,7 @@ def main():
 
     if is_training:
         dict_learning_custom_matrix(data_matrix, target_dimension, receptor_type)
-    do_loss_comparison(test_matrix, receptor_type)
+    evaluate_dictionary(test_matrix, receptor_type)
 
 
 def get_orthonormality(dict):
@@ -145,7 +145,7 @@ def compute_alt_penalty(dict):
     return total
 
 
-def do_loss_comparison(data, receptor_type):
+def evaluate_dictionary(data, receptor_type):
     input_string = ""  # used to ask user if they want to use the balanced error version
     while input_string != "y" and input_string != "n":
         input_string = input("do you want to use the balanced formulation? (y/n)")
@@ -275,6 +275,16 @@ def do_loss_comparison(data, receptor_type):
     for i, value in enumerate(dictionary_column_totals):
         dictionary_column_totals[i] = value / dict.shape[0]
     print_metrics(dictionary_column_totals)
+
+    print("\nDictionary Locality Metric")
+    localities = []
+    for col in range(dict.shape[1]):
+        localities.append(get_locality(col))
+    print_metrics(localities)
+
+    print("\nOrthonormality Metric")
+    print(get_orthonormality(dict))
+
 
 def evaluate_old_dictionary(data_ra, data_sa, data_pc):
     v_ra = sio.loadmat('feature_spaces_old/feature_spaces.mat', struct_as_record=True)["v_ra"]
