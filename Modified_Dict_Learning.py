@@ -99,7 +99,7 @@ def get_locality(dict, neuron_type, col=0, show_graph=True, locations=None):
         plt.scatter(x_avg_plot, y_avg_plot, label="\"Center\" of Feature")
         plt.title("Neurons Used in Feature " + str(col))
         plt.legend()
-        # plt.show()
+        plt.show()
 
     average_distance_from_mean = 0
     for i in range(len(used_x)):
@@ -154,15 +154,17 @@ def evaluate_dictionary(data, receptor_type):
     else:
         file_string_1 = ""
 
-    input_string = ""  # used to ask user if they want to use the balanced error version
-    while input_string != "y" and input_string != "n":
-        input_string = input("do you want to use the alt norm formulation? (y/n)")
+    input_string = ""  # used to ask user if they want to use the alt norm version or if they want vanilla [no SPF] 
+    while input_string != "y" and input_string != "n" and input_string != "v":
+        input_string = input("do you want to use the alt norm formulation or vanilla? (y/n/v)")
     if input_string == "y":
         file_string_2 = "ALT"
+    elif input_string == "v":
+        file_string_2 = "VANILLA"
     else:
         file_string_2 = ""
 
-    input_string = ""  # used to ask user if they want to use the balanced error version
+    input_string = ""  # used to ask user if they want to do a stim-by-stim evaluation
     while input_string != "y" and input_string != "n":
         input_string = input("do you want to do a stimulus-by-stimulus analysis? (y/n)")
     if input_string == "y":
@@ -261,13 +263,13 @@ def evaluate_dictionary(data, receptor_type):
             precision_list.append(prec)
             recall_list.append(recall)
 
-            if group == 3:
+            if group == 14:
                 plt.matshow(actual_group)
                 plt.show()
                 plt.matshow(reconstructed_group)
                 plt.show()
-                #get_locality(actual_group, receptor_type, col=11)
-                #get_locality(reconstructed_group, receptor_type, col=11)
+                get_locality(actual_group, receptor_type, col=147, show_graph=True)
+                get_locality(reconstructed_group, receptor_type, col=147, show_graph=True)
 
     if do_all_stimuli_individually:
         # we'll look at min, max, and average
