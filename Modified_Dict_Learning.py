@@ -23,9 +23,44 @@ def eval_old_dict():
     test_pc = get_data_matrices("PC", is_test=True)
     evaluate_old_dictionary(data_ra=test_ra, data_sa=test_sa, data_pc=test_pc)
 
+def get_max_locality(neuron_type):
+    if neuron_type == "RA":
+        index = "dist_ra"
+    elif neuron_type == "SA":
+        index = "dist_sa"
+    elif neuron_type == "PC":
+        index = "dist_pc"
+    else:
+        raise Exception("you gave an invalid receptor type lol")
+
+    # shape = (# neurons, 2 [location dimension])
+    # first index # is the particular neuron in question
+    # second index 0 is x
+    # second index 1 is y
+    locations = sio.loadmat('NeuronLocations.mat', struct_as_record=True)[index]
+
+    max_dist = 0
+    for neuron1_index in range(locations.shape[0]):
+        for neuron2_index in range(locations.shape[0]):
+            n1_x = locations[neuron1_index, 0]  # neuron 1's 'x' coordinate
+            n1_y = locations[neuron1_index, 1]
+            n2_x = locations[neuron2_index, 0]
+            n2_y = locations[neuron2_index, 1]
+
+            current_distance = np.sqrt((n1_x - n2_x) ** 2 + (n1_y - n2_y) ** 2)
+            if current_distance > max_dist:
+                max_dist = current_distance
+
+    return max_dist / 2
+
+
+
+
 def main():
 
     receptor_type = input("enter receptor type")  # options are SA (562 neurons), RA (948), PC (196)
+
+    print("max locality for", receptor_type, "=", get_max_locality(receptor_type))
 
     # this can be swapped around later to try to get more or less out of it (it's all about 1/4 dimension right now)
     if receptor_type == "PC":
@@ -58,9 +93,16 @@ def main():
 
 
 def get_orthonormality(dict):
-    return np.linalg.norm((dict.transpose() @ dict - np.identity(dict.shape[1])), ord='fro')
+    A = dict.transpose() @ dict
+    trace = np.trace(A)
+    sum = 0
+    for row in range(dict.shape[1]):
+        for col in range(dict.shape[1]):
+            sum += A[row, col] ** 2
+    coefficient = trace / sum
+    return np.linalg.norm(coefficient * dict.transpose() @ dict - np.identity(dict.shape[1]), ord='fro')
 
-def get_locality(dict, neuron_type, col=0, show_graph=True, locations=None):
+def get_locality(dict, neuron_type, col=0, show_graph=False, title=""):
     if neuron_type == "RA":
         index = "dist_ra"
     elif neuron_type == "SA":
@@ -74,8 +116,8 @@ def get_locality(dict, neuron_type, col=0, show_graph=True, locations=None):
     # first index # is the particular neuron in question
     # second index 0 is x
     # second index 1 is y
-    if locations is None:
-        locations = sio.loadmat('NeuronLocations.mat', struct_as_record=True)[index]
+    locations = sio.loadmat('NeuronLocations.mat', struct_as_record=True)[index]
+
     used_x = []
     used_y = []
     unused_x = []
@@ -97,7 +139,7 @@ def get_locality(dict, neuron_type, col=0, show_graph=True, locations=None):
         plt.scatter(unused_x, unused_y, label="Unused Neurons")
         plt.scatter(used_x, used_y, label="Used Neurons")
         plt.scatter(x_avg_plot, y_avg_plot, label="\"Center\" of Feature")
-        plt.title("Neurons Used in Feature " + str(col))
+        plt.title(title)
         plt.legend()
         plt.show()
 
@@ -220,6 +262,8 @@ def evaluate_dictionary(data, receptor_type):
     # plt.show()
 
 
+    print(get_orthonormality(dict))
+
     representation = np.linalg.lstsq(dict,data)[0]
 
     print("loss on set before rounding: ", compute_loss(data, dict, representation, lamb=0, using_sparsity_penalty=False))
@@ -232,7 +276,14 @@ def evaluate_dictionary(data, receptor_type):
     # print("loss =", loss_function_no_lasso(data,dict,representation))
     reconstructed_matrix = dict @ representation
 
-    if receptor_type == "SA":
+    if receptor_type == "SA" and file_string_1 == "balanced":
+        cutoff = .40
+    elif receptor_type == "PC" and file_string_1 == "balanced":
+        cutoff = .45
+    elif receptor_type == "RA" and file_string_1 == "balanced":
+        cutoff = .40
+
+    elif receptor_type == "SA":
         cutoff = .36
     elif receptor_type == "PC":
         cutoff = .40
@@ -253,6 +304,16 @@ def evaluate_dictionary(data, receptor_type):
             for col in range(group * 1000, (group + 1) * 1000):
                 reconstructed_column_list.append(reconstructed_matrix[:, col])
                 actual_column_list.append(data[:, col].transpose())
+
+                # comment this out later, this is just for finding which columns to graph
+                num_ones = 0
+                for row in range(reconstructed_matrix.shape[0]):
+                    if reconstructed_matrix[row, col] == 1:
+                        num_ones -= -1
+                if num_ones > 10:
+                    print("row,col = ", col, " num ones = ", num_ones)
+
+
             reconstructed_group = np.vstack(tuple(reconstructed_column_list)).transpose()
             actual_group = np.vstack(tuple(actual_column_list)).transpose()
             print("\n group:", group)
@@ -263,13 +324,16 @@ def evaluate_dictionary(data, receptor_type):
             precision_list.append(prec)
             recall_list.append(recall)
 
-            if group == 14:
+            if group == 110:
                 plt.matshow(actual_group)
                 plt.show()
                 plt.matshow(reconstructed_group)
                 plt.show()
-                get_locality(actual_group, receptor_type, col=147, show_graph=True)
-                get_locality(reconstructed_group, receptor_type, col=147, show_graph=True)
+                cols = [62, 63, 48]
+                for col in cols:
+                    print(col)
+                    get_locality(actual_group, receptor_type, col=8, show_graph=True, title="Original neural firings, t=" + str(col))
+                    get_locality(reconstructed_group, receptor_type, col=8, show_graph=True, title="Reconstructed neural firings, t=" + str(col))
 
     if do_all_stimuli_individually:
         # we'll look at min, max, and average
@@ -290,7 +354,7 @@ def evaluate_dictionary(data, receptor_type):
     print("\nDictionary Locality Metric")
     localities = []
     for col in range(dict.shape[1]):
-        localities.append(get_locality(dict, receptor_type, col=col))
+        localities.append(get_locality(dict, receptor_type, show_graph=False, col=col))
     print_metrics(localities)
 
     print("\nOrthonormality Metric")
@@ -318,8 +382,16 @@ def evaluate_old_dictionary(data_ra, data_sa, data_pc):
 
 
 def print_metrics(lis):
-    print("min, average, and max")
+    print("min, median, average, and max")
     print(min(lis))
+
+    # this is the median: if even number of list elements, average two middles ones, otherwise, take middle element
+    lis.sort()
+    if len(lis) % 2 == 0:
+        print((lis[len(lis) // 2] + lis[len(lis) // 2 + 1]) / 2)
+    else:
+        print(lis[len(lis) // 2])
+
     print(round(sum(lis) / len(lis), 4))
     print(round(max(lis), 4))
 
